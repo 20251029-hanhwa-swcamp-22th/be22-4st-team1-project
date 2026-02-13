@@ -1,0 +1,18 @@
+name: Pull Request
+description: PR 템플릿
+body:
+  - type: dropdown
+    id: pr-type
+    attributes:
+      label: PR 타입
+      description: PR의 타입을 선택해주세요
+      options:
+        - ✨ Feat: 새로운 기능 추가
+        - 🐛 Fix: 버그 수정
+        - 📝 Docs: 문서 수정
+        - 💄 Style: 코드 포맷팅
+        - ♻️ Refactor: 코드 리팩토링
+        - ✅ Test: 테스트 코드
+        - 🔧 Chore: 기타 변경사항
+    validations:
+      required: true
