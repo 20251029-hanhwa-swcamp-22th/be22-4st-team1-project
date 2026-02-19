@@ -170,12 +170,12 @@ map-log-frontend/
 
 ## 역할 분담
 
-| 담당 | 도메인 | 화면 |
-|------|------|------|
-| **A** | `user` (회원 + 인증/JWT + 관리자 API) | LoginView, SignUpView, MyPageView |
-| **B** | `diary` (일기 + 스크랩) | MapView, DiaryWriteView, DiaryDetailView |
-| **C** | `friend` + `notification` | FeedView, FriendsView, NotificationsView |
-| **D** | `common` (공통 기반 세팅) | — |
+| 담당      | 도메인 | 화면 |
+|---------|------|------|
+| **정현호** | `user` (회원 + 인증/JWT + 관리자 API) | LoginView, SignUpView, MyPageView |
+| **김선일** | `diary` (일기 + 스크랩) | MapView, DiaryWriteView, DiaryDetailView |
+| **정병진** | `friend` + `notification` | FeedView, FriendsView, NotificationsView |
+| **김태형** | `common` (공통 기반 세팅) | — |
 
 ### D 상세 작업 목록 (1일차 최우선 완료)
 
