@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: be22-4st-1team-project
+  profiles:
+    active: dev
+
+  # 파일 업로드 제한 (공통)
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+  # JPA 공통 설정
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+
+# JWT 공통 (만료 시간)
+jwt:
+  access-token-expiration: 1800000     # 30분 (ms)
+  refresh-token-expiration: 1209600000 # 14일 (ms)
+
+# 서버 공통
+server:
+  port: 8080

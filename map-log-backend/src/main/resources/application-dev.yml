@@ -1,0 +1,33 @@
+spring:
+  # 로컬 MariaDB 설정
+  datasource:
+    url: jdbc:mariadb://localhost:3306/maplog_dev?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: 1234
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 30000
+
+  # JPA (개발: DDL 자동 생성, SQL 출력)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+
+# JWT 시크릿 (개발용 고정값)
+jwt:
+  secret: dev-secret-key-must-be-at-least-32-characters-long
+
+# 로깅 (개발: DEBUG 레벨)
+logging:
+  level:
+    root: INFO
+    com.maplog: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
