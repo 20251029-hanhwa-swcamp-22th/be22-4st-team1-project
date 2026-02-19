@@ -1,4 +1,4 @@
-﻿package com.maplog.diary.query.service;
+package com.maplog.diary.query.service;
 
 public class DiaryQueryService {
 }

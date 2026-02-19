@@ -1,4 +1,4 @@
-﻿package com.maplog.notification.command.repository;
+package com.maplog.notification.command.repository;
 
 public interface NotificationCommandRepository {
 }

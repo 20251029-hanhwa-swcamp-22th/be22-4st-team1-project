@@ -1,4 +1,4 @@
-﻿package com.maplog.friend.command.service;
+package com.maplog.friend.command.service;
 
 public class FriendCommandService {
 }

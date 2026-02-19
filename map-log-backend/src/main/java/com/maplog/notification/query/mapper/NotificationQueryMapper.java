@@ -1,4 +1,4 @@
-﻿package com.maplog.notification.query.mapper;
+package com.maplog.notification.query.mapper;
 
 public interface NotificationQueryMapper {
 }

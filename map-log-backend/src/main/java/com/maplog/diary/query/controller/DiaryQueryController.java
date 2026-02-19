@@ -1,4 +1,4 @@
-﻿package com.maplog.diary.query.controller;
+package com.maplog.diary.query.controller;
 
 public class DiaryQueryController {
 }

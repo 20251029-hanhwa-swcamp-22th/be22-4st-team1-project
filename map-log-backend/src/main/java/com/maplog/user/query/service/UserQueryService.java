@@ -1,4 +1,4 @@
-﻿package com.maplog.user.query.service;
+package com.maplog.user.query.service;
 
 public class UserQueryService {
 }

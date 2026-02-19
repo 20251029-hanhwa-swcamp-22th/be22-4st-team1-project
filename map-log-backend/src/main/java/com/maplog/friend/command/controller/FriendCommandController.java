@@ -1,4 +1,4 @@
-﻿package com.maplog.friend.command.controller;
+package com.maplog.friend.command.controller;
 
 public class FriendCommandController {
 }

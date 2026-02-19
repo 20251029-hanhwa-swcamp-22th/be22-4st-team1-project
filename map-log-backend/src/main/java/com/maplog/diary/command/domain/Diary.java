@@ -1,4 +1,4 @@
-﻿package com.maplog.diary.command.domain;
+package com.maplog.diary.command.domain;
 
 public class Diary {
 }
