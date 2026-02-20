@@ -14,5 +14,10 @@ export const notificationApi = {
     /** 알림 전체 읽음 - PATCH /api/notifications/read-all */
     readAll() {
         return api.patch('/api/notifications/read-all')
+    },
+
+    /** 알림 일괄 삭제 - DELETE /api/notifications?isRead=Y|N */
+    deleteAll(isRead) {
+        return api.delete('/api/notifications', { params: isRead !== undefined ? { isRead } : {} })
     }
 }

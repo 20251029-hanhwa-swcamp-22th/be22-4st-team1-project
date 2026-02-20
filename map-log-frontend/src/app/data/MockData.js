@@ -3,7 +3,7 @@
 
 export const mockDiaries = [
     {
-        diaryId: 1,
+        id: 1,
         title: '경복궁에서의 하루',
         content: '오늘은 경복궁을 다녀왔다. 날씨가 맑아서 더욱 아름다웠다.',
         locationName: '경복궁',
@@ -16,7 +16,7 @@ export const mockDiaries = [
         userId: 1
     },
     {
-        diaryId: 2,
+        id: 2,
         title: '한강 피크닉',
         content: '친구들과 한강에서 피크닉을 즐겼다.',
         locationName: '뚝섬한강공원',
@@ -29,7 +29,7 @@ export const mockDiaries = [
         userId: 1
     },
     {
-        diaryId: 3,
+        id: 3,
         title: '성수동 카페 탐방',
         content: '성수동의 핫한 카페를 돌아다녔다.',
         locationName: '성수동',
@@ -87,7 +87,7 @@ export const mockNotifications = [
 
 export const mockFeed = [
     {
-        diaryId: 4,
+        id: 4,
         title: '이탐험의 북한산 등반',
         locationName: '북한산',
         thumbnailUrl: 'https://picsum.photos/seed/4/400/300',
@@ -97,7 +97,7 @@ export const mockFeed = [
 ]
 
 export const mockMarkers = [
-    { diaryId: 1, latitude: 37.5796, longitude: 126.9770, locationName: '경복궁', title: '경복궁에서의 하루' },
-    { diaryId: 2, latitude: 37.5311, longitude: 127.0674, locationName: '뚝섬한강공원', title: '한강 피크닉' },
-    { diaryId: 3, latitude: 37.5446, longitude: 127.0553, locationName: '성수동', title: '성수동 카페 탐방' }
+    { id: 1, latitude: 37.5796, longitude: 126.9770, locationName: '경복궁', title: '경복궁에서의 하루' },
+    { id: 2, latitude: 37.5311, longitude: 127.0674, locationName: '뚝섬한강공원', title: '한강 피크닉' },
+    { id: 3, latitude: 37.5446, longitude: 127.0553, locationName: '성수동', title: '성수동 카페 탐방' }
 ]

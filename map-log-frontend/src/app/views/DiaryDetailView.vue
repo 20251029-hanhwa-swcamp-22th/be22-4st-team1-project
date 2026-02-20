@@ -44,9 +44,9 @@ async function load() {
 async function toggleScrap() {
   try {
     if (isScrapped.value) {
-      await diaryApi.removeScrap(diary.value.diaryId)
+      await diaryApi.removeScrap(diary.value.id)
     } else {
-      await diaryApi.addScrap(diary.value.diaryId)
+      await diaryApi.addScrap(diary.value.id)
     }
     isScrapped.value = !isScrapped.value
   } catch (e) {
@@ -57,7 +57,7 @@ async function toggleScrap() {
 async function deleteDiary() {
   if (!confirm('정말 삭제하시겠습니까?')) return
   try {
-    await diaryApi.deleteDiary(diary.value.diaryId)
+    await diaryApi.deleteDiary(diary.value.id)
     router.push('/map')
   } catch (e) {
     alert(e?.message || '삭제 실패')
@@ -68,7 +68,7 @@ async function deleteDiary() {
 async function openShare() {
   try {
     const res = await friendApi.getFriends()
-    friends.value = res?.data?.friends || mockFriends
+    friends.value = Array.isArray(res?.data) ? res.data : mockFriends
   } catch {
     friends.value = mockFriends
   }
@@ -79,7 +79,7 @@ async function doShare() {
   if (!selectedFriends.value.length) { alert('친구를 선택해주세요.'); return }
   shareLoading.value = true
   try {
-    await diaryApi.shareDiary(diary.value.diaryId, { friendIds: selectedFriends.value })
+    await diaryApi.shareDiary(diary.value.id, { friendIds: selectedFriends.value })
     alert('공유 완료!')
     showShare.value = false
     selectedFriends.value = []
@@ -97,6 +97,8 @@ function openEdit() {
     content: diary.value.content,
     address: diary.value.address || '',
     locationName: diary.value.locationName || '',
+    visitedAt: diary.value.visitedAt || new Date().toISOString().slice(0, 19),
+    visibility: diary.value.visibility || 'PUBLIC',
     newImages: [], deleteImageIds: [], imagePreviews: []
   }
   showEdit.value = true
@@ -111,9 +113,11 @@ async function saveEdit() {
     fd.append('content', editForm.value.content)
     if (editForm.value.address) fd.append('address', editForm.value.address)
     if (editForm.value.locationName) fd.append('locationName', editForm.value.locationName)
+    fd.append('visitedAt', editForm.value.visitedAt)
+    fd.append('visibility', editForm.value.visibility)
     editForm.value.deleteImageIds.forEach(id => fd.append('deleteImageIds', id))
     editForm.value.newImages.forEach(img => fd.append('images', img))
-    await diaryApi.updateDiary(diary.value.diaryId, fd)
+    await diaryApi.updateDiary(diary.value.id, fd)
     showEdit.value = false
     await load()
   } catch (e) {

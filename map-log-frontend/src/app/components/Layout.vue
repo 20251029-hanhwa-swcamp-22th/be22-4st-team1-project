@@ -32,7 +32,7 @@ const avatarInitial = computed(() => {
 async function fetchUnread() {
   try {
     const res = await notificationApi.getNotifications({ isRead: 'N' })
-    unreadCount.value = res?.data?.notifications?.length || 0
+    unreadCount.value = res?.data?.totalElements || res?.data?.content?.length || 0
   } catch (_) {
     // 미연결 시 무시
   }

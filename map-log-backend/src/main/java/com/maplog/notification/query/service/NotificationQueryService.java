@@ -20,13 +20,15 @@ public class NotificationQueryService {
     private final NotificationCommandRepository notificationCommandRepository;
     private final UserCommandRepository userCommandRepository;
 
-    public Page<NotificationResponse> getNotifications(String email, Pageable pageable) {
+    public Page<NotificationResponse> getNotifications(String email, Boolean readFilter, Pageable pageable) {
         User user = getUser(email);
-        return notificationCommandRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
-                .map(n -> new NotificationResponse(
-                        n.getId(), n.getType().name(), n.getReferenceId(),
-                        n.getMessage(), n.isRead(), n.getCreatedAt()
-                ));
+        var page = readFilter == null
+                ? notificationCommandRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
+                : notificationCommandRepository.findByUserIdAndReadOrderByCreatedAtDesc(user.getId(), readFilter, pageable);
+        return page.map(n -> new NotificationResponse(
+                n.getId(), n.getType().name(), n.getReferenceId(),
+                n.getMessage(), n.isRead(), n.getCreatedAt()
+        ));
     }
 
     private User getUser(String email) {

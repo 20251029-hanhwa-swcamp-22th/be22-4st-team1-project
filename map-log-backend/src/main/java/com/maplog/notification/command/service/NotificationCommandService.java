@@ -55,6 +55,15 @@ public class NotificationCommandService {
         notificationCommandRepository.markAllAsRead(user.getId());
     }
 
+    public void deleteAll(String email, Boolean readFilter) {
+        User user = getUser(email);
+        if (readFilter == null) {
+            notificationCommandRepository.deleteAllByUserId(user.getId());
+        } else {
+            notificationCommandRepository.deleteByUserIdAndRead(user.getId(), readFilter);
+        }
+    }
+
     private User getUser(String email) {
         return userCommandRepository.findByEmailAndDeletedAtIsNull(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));

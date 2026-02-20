@@ -1,6 +1,5 @@
 package com.maplog.common.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maplog.common.jwt.JwtAuthenticationFilter;
 import com.maplog.common.jwt.JwtTokenProvider;
 import com.maplog.common.security.RestAccessDeniedHandler;
@@ -33,7 +32,6 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
-    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -54,6 +52,7 @@ public class SecurityConfig {
                         "/api/auth/login",
                         "/api/auth/refresh"
                     ).permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/users/check-nickname").permitAll()
                     .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                     .anyRequest().authenticated())
             .addFilterBefore(
@@ -65,7 +64,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService, objectMapper);
+        return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
     @Bean

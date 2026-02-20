@@ -18,9 +18,13 @@ public class UserCommandService {
     private final UserCommandRepository userCommandRepository;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public void updateProfile(String email, UpdateProfileRequest request) {
+    public void updateProfile(String email, String nickname, String profileImageUrl) {
         User user = getUserByEmail(email);
-        user.updateProfile(request.nickname(), request.profileImageUrl());
+        if (nickname != null && !nickname.equals(user.getNickname())
+                && userCommandRepository.existsByNicknameAndIdNotAndDeletedAtIsNull(nickname, user.getId())) {
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+        user.updateProfile(nickname, profileImageUrl);
     }
 
     public void deleteAccount(String email) {

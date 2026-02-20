@@ -1,6 +1,7 @@
 package com.maplog.user.command.controller;
 
 import com.maplog.common.response.ApiResponse;
+import com.maplog.user.command.domain.UserStatus;
 import com.maplog.user.command.dto.UserStatusUpdateRequest;
 import com.maplog.user.command.service.AdminUserService;
 import com.maplog.user.query.dto.AdminUserResponse;
@@ -21,8 +22,9 @@ public class AdminUserController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<AdminUserResponse>>> getUsers(
+            @RequestParam(required = false) UserStatus status,
             @PageableDefault(size = 20) Pageable pageable) {
-        Page<AdminUserResponse> users = adminUserService.getUsers(pageable);
+        Page<AdminUserResponse> users = adminUserService.getUsers(status, pageable);
         return ResponseEntity.ok(ApiResponse.success(users));
     }
 

@@ -27,7 +27,8 @@ const form = ref({
   latitude: null,
   longitude: null,
   locationName: '',
-  address: ''
+  address: '',
+  visibility: 'PUBLIC'
 })
 const loading = ref(false)
 const error = ref('')
@@ -151,12 +152,14 @@ async function saveDiary() {
     if (form.value.longitude) fd.append('longitude', form.value.longitude)
     if (form.value.locationName) fd.append('locationName', form.value.locationName)
     if (form.value.address) fd.append('address', form.value.address)
+    fd.append('visitedAt', new Date().toISOString().slice(0, 19))
+    fd.append('visibility', form.value.visibility)
     form.value.images.forEach(img => fd.append('images', img))
 
     const res = await diaryApi.createDiary(fd)
     closeModal()
     loadMarkers()
-    alert(`일기가 작성되었습니다! (ID: ${res?.data?.diaryId})`)
+    alert(`일기가 작성되었습니다! (ID: ${res?.data})`)
   } catch (e) {
     error.value = e?.message || '일기 작성에 실패했습니다.'
   } finally {
@@ -166,7 +169,7 @@ async function saveDiary() {
 
 function closeModal() {
   showModal.value = false
-  form.value = { title:'',content:'',images:[],imagePreviews:[],latitude:null,longitude:null,locationName:'',address:'' }
+  form.value = { title:'',content:'',images:[],imagePreviews:[],latitude:null,longitude:null,locationName:'',address:'',visibility:'PUBLIC' }
   error.value = ''
 }
 
@@ -203,10 +206,10 @@ onUnmounted(() => {
       <!-- 목업 마커 목록 -->
       <div style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;width:320px">
         <div
-          v-for="m in mockMarkers" :key="m.diaryId"
+          v-for="m in mockMarkers" :key="m.id"
           class="card"
           style="cursor:pointer;display:flex;gap:10px;align-items:center"
-          @click="router.push(`/diaries/${m.diaryId}`)"
+          @click="router.push(`/diaries/${m.id}`)"
         >
           <MapPin :size="16" style="color:var(--color-primary);flex-shrink:0" />
           <div>
@@ -221,7 +224,7 @@ onUnmounted(() => {
     <button
       v-if="mapReady"
       class="btn btn-primary"
-      style="position:absolute;bottom:28px;right:28px;border-radius:var(--radius-full);padding:14px 22px;box-shadow:var(--shadow-lg);font-size:15px"
+      style="position:absolute;bottom:28px;right:28px;border-radius:var(--radius-full);padding:14px 22px;box-shadow:var(--shadow-lg);font-size:15px;z-index:10"
       @click="showModal = true"
     >
       <Plus :size="18" /> 일기 쓰기
@@ -230,7 +233,7 @@ onUnmounted(() => {
     <!-- 마커 팝업 -->
     <div
       v-if="popup"
-      style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:var(--color-bg-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px 20px;min-width:220px;box-shadow:var(--shadow-lg)"
+      style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:var(--color-bg-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px 20px;min-width:220px;box-shadow:var(--shadow-lg);z-index:10"
     >
       <button class="modal-close" style="position:absolute;top:8px;right:8px" @click="popup=null">✕</button>
       <div style="font-size:13px;font-weight:600;padding-right:24px">{{ popup.title }}</div>
@@ -240,7 +243,7 @@ onUnmounted(() => {
       <button
         class="btn btn-primary btn-sm"
         style="margin-top:12px;width:100%"
-        @click="router.push(`/diaries/${popup.diaryId}`)"
+        @click="router.push(`/diaries/${popup.id}`)"
       >
         일기 보기
       </button>

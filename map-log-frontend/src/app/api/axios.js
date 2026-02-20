@@ -40,8 +40,7 @@ api.interceptors.response.use(
             try {
                 const res = await axios.post(
                     `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/auth/refresh`,
-                    null,
-                    { headers: { Authorization: `Bearer ${refreshToken}` } }
+                    { refreshToken }
                 )
                 const newToken = res.data?.data?.accessToken
                 localStorage.setItem('ml_access_token', newToken)

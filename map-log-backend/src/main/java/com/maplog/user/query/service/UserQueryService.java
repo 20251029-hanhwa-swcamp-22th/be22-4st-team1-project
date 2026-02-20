@@ -25,6 +25,10 @@ public class UserQueryService {
         return toProfileResponse(user);
     }
 
+    public boolean isNicknameAvailable(String nickname) {
+        return !userCommandRepository.existsByNicknameAndDeletedAtIsNull(nickname);
+    }
+
     public List<UserSummaryResponse> searchUsers(String keyword) {
         return userCommandRepository.findByNicknameContainingAndDeletedAtIsNull(keyword)
                 .stream()

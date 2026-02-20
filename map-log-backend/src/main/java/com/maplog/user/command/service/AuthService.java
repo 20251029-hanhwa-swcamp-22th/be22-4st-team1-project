@@ -36,6 +36,9 @@ public class AuthService {
         if (userCommandRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
+        if (userCommandRepository.existsByNicknameAndDeletedAtIsNull(request.nickname())) {
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
         User user = User.create(
                 request.email(),
                 passwordEncoder.encode(request.password()),
