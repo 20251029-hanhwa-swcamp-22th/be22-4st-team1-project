@@ -2,11 +2,11 @@ package com.maplog.user.query.dto;
 
 import java.time.LocalDateTime;
 
-public record UserProfileQueryResponse(
+public record AdminUserResponse(
         Long id,
         String email,
         String nickname,
-        String profileImageUrl,
         String role,
+        String status,
         LocalDateTime createdAt
 ) {}
