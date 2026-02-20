@@ -12,6 +12,8 @@ public interface UserCommandRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmailAndDeletedAtIsNull(String email);
 
+    Optional<User> findByIdAndDeletedAtIsNull(Long id);
+
     boolean existsByEmailAndDeletedAtIsNull(String email);
 
     List<User> findByNicknameContainingAndDeletedAtIsNull(String nickname);
