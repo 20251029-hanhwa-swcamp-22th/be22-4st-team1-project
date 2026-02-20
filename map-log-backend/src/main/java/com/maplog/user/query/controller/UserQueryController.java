@@ -1,10 +1,15 @@
 package com.maplog.user.query.controller;
 
 import com.maplog.common.response.ApiResponse;
+import com.maplog.diary.query.dto.DiarySummaryResponse;
+import com.maplog.diary.query.service.DiaryQueryService;
 import com.maplog.user.query.dto.UserProfileQueryResponse;
 import com.maplog.user.query.dto.UserSummaryResponse;
 import com.maplog.user.query.service.UserQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +26,7 @@ import java.util.List;
 public class UserQueryController {
 
     private final UserQueryService userQueryService;
+    private final DiaryQueryService diaryQueryService;
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserProfileQueryResponse>> getMyProfile(
@@ -34,5 +40,21 @@ public class UserQueryController {
             @RequestParam String keyword) {
         List<UserSummaryResponse> responses = userQueryService.searchUsers(keyword);
         return ResponseEntity.ok(ApiResponse.success(responses));
+    }
+
+    @GetMapping("/me/diaries")
+    public ResponseEntity<ApiResponse<Page<DiarySummaryResponse>>> getMyDiaries(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<DiarySummaryResponse> diaries = diaryQueryService.getMyDiaries(userDetails.getUsername(), pageable);
+        return ResponseEntity.ok(ApiResponse.success(diaries));
+    }
+
+    @GetMapping("/me/scraps")
+    public ResponseEntity<ApiResponse<Page<DiarySummaryResponse>>> getMyScraps(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<DiarySummaryResponse> scraps = diaryQueryService.getMyScraps(userDetails.getUsername(), pageable);
+        return ResponseEntity.ok(ApiResponse.success(scraps));
     }
 }

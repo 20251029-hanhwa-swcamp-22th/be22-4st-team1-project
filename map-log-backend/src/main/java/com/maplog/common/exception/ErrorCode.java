@@ -27,6 +27,8 @@ public enum ErrorCode {
     // 일기
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 일기입니다."),
     DIARY_ACCESS_DENIED(HttpStatus.FORBIDDEN, "일기에 접근 권한이 없습니다."),
+    ALREADY_SCRAPED(HttpStatus.CONFLICT, "이미 스크랩한 일기입니다."),
+    SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, "스크랩을 찾을 수 없습니다."),
 
     // 친구
     FRIEND_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 요청을 찾을 수 없습니다."),
