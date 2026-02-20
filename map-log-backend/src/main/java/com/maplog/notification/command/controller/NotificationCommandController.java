@@ -1,4 +1,4 @@
-﻿package com.maplog.notification.command.controller;
+package com.maplog.notification.command.controller;
 
 public class NotificationCommandController {
 }

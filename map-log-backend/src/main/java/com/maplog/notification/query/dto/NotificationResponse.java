@@ -1,4 +1,4 @@
-﻿package com.maplog.notification.query.dto;
+package com.maplog.notification.query.dto;
 
 public class NotificationResponse {
 }

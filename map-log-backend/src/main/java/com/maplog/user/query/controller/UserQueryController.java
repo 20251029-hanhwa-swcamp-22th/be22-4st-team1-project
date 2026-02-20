@@ -1,4 +1,4 @@
-﻿package com.maplog.user.query.controller;
+package com.maplog.user.query.controller;
 
 public class UserQueryController {
 }

@@ -1,4 +1,4 @@
-﻿package com.maplog.diary.command.dto;
+package com.maplog.diary.command.dto;
 
 public class DiaryCommandRequest {
 }

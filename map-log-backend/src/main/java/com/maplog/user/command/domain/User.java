@@ -1,4 +1,4 @@
-﻿package com.maplog.user.command.domain;
+package com.maplog.user.command.domain;
 
 public class User {
 }

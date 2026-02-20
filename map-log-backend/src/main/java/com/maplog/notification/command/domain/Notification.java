@@ -1,4 +1,4 @@
-﻿package com.maplog.notification.command.domain;
+package com.maplog.notification.command.domain;
 
 public class Notification {
 }

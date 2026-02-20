@@ -1,4 +1,4 @@
-﻿package com.maplog.user.command.controller;
+package com.maplog.user.command.controller;
 
 public class UserCommandController {
 }

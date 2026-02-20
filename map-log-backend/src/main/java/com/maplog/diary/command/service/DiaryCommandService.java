@@ -1,4 +1,4 @@
-﻿package com.maplog.diary.command.service;
+package com.maplog.diary.command.service;
 
 public class DiaryCommandService {
 }
