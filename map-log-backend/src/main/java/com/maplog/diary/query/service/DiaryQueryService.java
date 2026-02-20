@@ -9,6 +9,7 @@ import com.maplog.diary.command.repository.ScrapRepository;
 import com.maplog.diary.query.dto.DiaryDetailResponse;
 import com.maplog.diary.query.dto.DiaryMarkerResponse;
 import com.maplog.diary.query.dto.DiarySummaryResponse;
+import com.maplog.friend.command.repository.FriendCommandRepository;
 import com.maplog.user.command.domain.User;
 import com.maplog.user.command.repository.UserCommandRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class DiaryQueryService {
     private final DiaryCommandRepository diaryCommandRepository;
     private final ScrapRepository scrapRepository;
     private final UserCommandRepository userCommandRepository;
+    private final FriendCommandRepository friendCommandRepository;
 
     public DiaryDetailResponse getDiaryDetail(String email, Long diaryId) {
         User requestingUser = getUser(email);
@@ -86,8 +88,11 @@ public class DiaryQueryService {
 
     private boolean canAccess(User requestingUser, Diary diary) {
         if (diary.isOwner(requestingUser.getId())) return true;
-        // FRIENDS_ONLY: C(friend) 완성 후 친구 여부 체크 추가
-        return diary.getVisibility() == Visibility.PUBLIC;
+        if (diary.getVisibility() == Visibility.PUBLIC) return true;
+        if (diary.getVisibility() == Visibility.FRIENDS_ONLY) {
+            return friendCommandRepository.isFriend(requestingUser.getId(), diary.getUserId());
+        }
+        return false;
     }
 
     private User getUser(String email) {

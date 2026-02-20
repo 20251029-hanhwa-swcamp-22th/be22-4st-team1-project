@@ -10,12 +10,17 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface DiaryCommandRepository extends JpaRepository<Diary, Long> {
 
     Optional<Diary> findByIdAndDeletedAtIsNull(Long id);
 
     Page<Diary> findByUserIdAndDeletedAtIsNull(Long userId, Pageable pageable);
+
+    @Query("SELECT d FROM Diary d WHERE d.deletedAt IS NULL AND d.userId IN :friendIds " +
+           "AND d.visibility IN ('PUBLIC', 'FRIENDS_ONLY') ORDER BY d.createdAt DESC")
+    Page<Diary> findFriendFeed(@Param("friendIds") Set<Long> friendIds, Pageable pageable);
 
     @Query("SELECT d FROM Diary d WHERE d.latitude BETWEEN :minLat AND :maxLat " +
            "AND d.longitude BETWEEN :minLng AND :maxLng " +

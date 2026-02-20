@@ -1,4 +1,8 @@
 package com.maplog.friend.query.dto;
 
-public class FriendSummaryResponse {
-}
+public record FriendSummaryResponse(
+        Long friendId,
+        Long userId,
+        String nickname,
+        String profileImageUrl
+) {}
