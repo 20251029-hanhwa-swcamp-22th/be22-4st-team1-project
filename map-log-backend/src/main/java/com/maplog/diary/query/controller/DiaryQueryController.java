@@ -30,12 +30,12 @@ public class DiaryQueryController {
     @GetMapping("/map")
     public ResponseEntity<ApiResponse<List<DiaryMarkerResponse>>> getMapMarkers(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam Double minLat,
-            @RequestParam Double maxLat,
-            @RequestParam Double minLng,
-            @RequestParam Double maxLng) {
+            @RequestParam Double swLat,
+            @RequestParam Double swLng,
+            @RequestParam Double neLat,
+            @RequestParam Double neLng) {
         List<DiaryMarkerResponse> markers = diaryQueryService.getMapMarkers(
-                userDetails.getUsername(), minLat, maxLat, minLng, maxLng);
+                userDetails.getUsername(), swLat, neLat, swLng, neLng);
         return ResponseEntity.ok(ApiResponse.success(markers));
     }
 }

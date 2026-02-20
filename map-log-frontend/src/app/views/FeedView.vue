@@ -49,9 +49,9 @@ onMounted(() => load(0))
     <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:24px">
       <div
         v-for="item in feed"
-        :key="item.diaryId"
+        :key="item.id"
         class="diary-card"
-        @click="router.push(`/diaries/${item.diaryId}`)"
+        @click="router.push(`/diaries/${item.id}`)"
       >
         <div class="diary-card-thumb">
           <img v-if="item.thumbnailUrl" :src="item.thumbnailUrl" :alt="item.title" />

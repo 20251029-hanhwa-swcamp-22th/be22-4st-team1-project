@@ -1,6 +1,7 @@
 package com.maplog.diary.query.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record DiaryDetailResponse(
         Long id,
@@ -15,5 +16,6 @@ public record DiaryDetailResponse(
         LocalDateTime visitedAt,
         String visibility,
         LocalDateTime createdAt,
-        boolean scraped
+        boolean scraped,
+        List<DiaryImageResponse> images
 ) {}

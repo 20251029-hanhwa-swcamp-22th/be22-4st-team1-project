@@ -37,11 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function signup(payload) {
-        const res = await authApi.signup(payload)
-        const { accessToken: at, refreshToken: rt, userId: id, nickname: nick, role } = res.data
-        setTokens({ accessToken: at, refreshToken: rt })
-        setUser({ userId: id, nickname: nick, role })
-        return res
+        return authApi.signup(payload)
     }
 
     async function logout() {

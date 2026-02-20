@@ -29,4 +29,15 @@ public class NotificationCommandController {
         notificationCommandService.markAllAsRead(userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success("모든 알림을 읽음 처리했습니다.", null));
     }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteAll(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) String isRead) {
+        Boolean readFilter = null;
+        if ("Y".equalsIgnoreCase(isRead)) readFilter = true;
+        else if ("N".equalsIgnoreCase(isRead)) readFilter = false;
+        notificationCommandService.deleteAll(userDetails.getUsername(), readFilter);
+        return ResponseEntity.ok(ApiResponse.success("알림을 삭제했습니다.", null));
+    }
 }

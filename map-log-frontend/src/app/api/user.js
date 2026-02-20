@@ -28,6 +28,11 @@ export const userApi = {
         return api.delete('/api/users/me')
     },
 
+    /** 닉네임 중복 확인 - GET /api/users/check-nickname?nickname=... */
+    checkNickname(nickname) {
+        return api.get('/api/users/check-nickname', { params: { nickname } })
+    },
+
     /** 사용자 검색 - GET /api/users/search?nickname=keyword */
     searchUsers(nickname) {
         return api.get('/api/users/search', { params: { nickname } })

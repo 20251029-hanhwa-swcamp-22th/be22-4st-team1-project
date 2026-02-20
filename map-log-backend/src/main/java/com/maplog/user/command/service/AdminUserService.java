@@ -3,6 +3,7 @@ package com.maplog.user.command.service;
 import com.maplog.common.exception.BusinessException;
 import com.maplog.common.exception.ErrorCode;
 import com.maplog.user.command.domain.User;
+import com.maplog.user.command.domain.UserStatus;
 import com.maplog.user.command.dto.UserStatusUpdateRequest;
 import com.maplog.user.command.repository.UserCommandRepository;
 import com.maplog.user.query.dto.AdminUserResponse;
@@ -20,21 +21,29 @@ public class AdminUserService {
     private final UserCommandRepository userCommandRepository;
 
     @Transactional(readOnly = true)
-    public Page<AdminUserResponse> getUsers(Pageable pageable) {
+    public Page<AdminUserResponse> getUsers(UserStatus status, Pageable pageable) {
+        if (status != null) {
+            return userCommandRepository.findAllByStatusAndDeletedAtIsNull(status, pageable)
+                    .map(this::toResponse);
+        }
         return userCommandRepository.findAllByDeletedAtIsNull(pageable)
-                .map(u -> new AdminUserResponse(
-                        u.getId(),
-                        u.getEmail(),
-                        u.getNickname(),
-                        u.getRole().name(),
-                        u.getStatus().name(),
-                        u.getCreatedAt()
-                ));
+                .map(this::toResponse);
     }
 
     public void changeUserStatus(Long userId, UserStatusUpdateRequest request) {
         User user = userCommandRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        user.changeStatus(request.status());
+        user.changeStatus(request.status(), request.suspensionReason(), request.suspensionExpiresAt());
+    }
+
+    private AdminUserResponse toResponse(User u) {
+        return new AdminUserResponse(
+                u.getId(),
+                u.getEmail(),
+                u.getNickname(),
+                u.getRole().name(),
+                u.getStatus().name(),
+                u.getCreatedAt()
+        );
     }
 }

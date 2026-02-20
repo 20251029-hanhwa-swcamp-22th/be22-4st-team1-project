@@ -492,7 +492,8 @@ select.form-input { cursor: pointer; }
 }
 
 .noti-item:hover { background: var(--color-bg-3); }
-.noti-item.unread { background: rgba(88,166,255,.06); }
+.noti-item.unread { background: rgba(88,166,255,.15); border-left: 3px solid var(--color-primary); }
+.noti-item.read   { background: var(--color-bg-2); opacity: 0.65; }
 
 .noti-icon {
   width: 38px; height: 38px; flex-shrink: 0;

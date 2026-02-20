@@ -5,8 +5,10 @@ import com.maplog.common.exception.ErrorCode;
 import com.maplog.diary.command.domain.Diary;
 import com.maplog.diary.command.domain.Visibility;
 import com.maplog.diary.command.repository.DiaryCommandRepository;
+import com.maplog.diary.command.repository.DiaryImageRepository;
 import com.maplog.diary.command.repository.ScrapRepository;
 import com.maplog.diary.query.dto.DiaryDetailResponse;
+import com.maplog.diary.query.dto.DiaryImageResponse;
 import com.maplog.diary.query.dto.DiaryMarkerResponse;
 import com.maplog.diary.query.dto.DiarySummaryResponse;
 import com.maplog.friend.command.repository.FriendCommandRepository;
@@ -26,6 +28,7 @@ import java.util.List;
 public class DiaryQueryService {
 
     private final DiaryCommandRepository diaryCommandRepository;
+    private final DiaryImageRepository diaryImageRepository;
     private final ScrapRepository scrapRepository;
     private final UserCommandRepository userCommandRepository;
     private final FriendCommandRepository friendCommandRepository;
@@ -43,13 +46,17 @@ public class DiaryQueryService {
 
         boolean scraped = scrapRepository.existsByUserIdAndDiaryId(requestingUser.getId(), diaryId);
 
+        List<DiaryImageResponse> images = diaryImageRepository.findByDiaryId(diaryId).stream()
+                .map(img -> new DiaryImageResponse(img.getId(), img.getImageUrl()))
+                .toList();
+
         return new DiaryDetailResponse(
                 diary.getId(), diary.getUserId(), author.getNickname(),
                 diary.getTitle(), diary.getContent(),
                 diary.getLatitude(), diary.getLongitude(),
                 diary.getLocationName(), diary.getAddress(),
                 diary.getVisitedAt(), diary.getVisibility().name(),
-                diary.getCreatedAt(), scraped
+                diary.getCreatedAt(), scraped, images
         );
     }
 

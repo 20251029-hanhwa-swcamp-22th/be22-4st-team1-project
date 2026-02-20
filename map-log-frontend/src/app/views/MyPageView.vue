@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/app/stores/auth.js'
 import { userApi } from '@/app/api/user.js'
@@ -19,6 +19,24 @@ const loading = ref(true)
 const showEdit = ref(false)
 const editForm = ref({ nickname: '', profileImage: null, previewUrl: null })
 const editLoading = ref(false)
+const editNicknameStatus = ref('') // '' | 'checking' | 'available' | 'taken'
+let editNicknameTimer = null
+
+watch(() => editForm.value.nickname, (val) => {
+  editNicknameStatus.value = ''
+  clearTimeout(editNicknameTimer)
+  if (!val || val.length < 2 || val.length > 20) return
+  if (val === me.value?.nickname) return  // 현재 닉네임과 동일하면 검사 불필요
+  editNicknameStatus.value = 'checking'
+  editNicknameTimer = setTimeout(async () => {
+    try {
+      const res = await userApi.checkNickname(val)
+      editNicknameStatus.value = res?.data ? 'available' : 'taken'
+    } catch {
+      editNicknameStatus.value = ''
+    }
+  }, 400)
+})
 
 // 탈퇴 확인
 const showWithdraw = ref(false)
@@ -45,6 +63,7 @@ async function load() {
 
 function openEdit() {
   editForm.value = { nickname: me.value.nickname, profileImage: null, previewUrl: me.value.profileImageUrl }
+  editNicknameStatus.value = ''
   showEdit.value = true
 }
 
@@ -58,6 +77,10 @@ function onProfileImage(e) {
 }
 
 async function saveProfile() {
+  if (editNicknameStatus.value === 'taken') {
+    alert('이미 사용 중인 닉네임입니다.')
+    return
+  }
   editLoading.value = true
   try {
     const fd = new FormData()
@@ -135,7 +158,7 @@ onMounted(load)
       <template v-if="tab==='diaries'">
         <div v-if="!diaries.length" class="empty"><div class="empty-icon">📝</div><p class="empty-text">아직 일기가 없습니다</p></div>
         <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
-          <div v-for="d in diaries" :key="d.diaryId" class="diary-card" @click="router.push(`/diaries/${d.diaryId}`)">
+          <div v-for="d in diaries" :key="d.id" class="diary-card" @click="router.push(`/diaries/${d.id}`)">
             <div class="diary-card-thumb">
               <img v-if="d.thumbnailUrl" :src="d.thumbnailUrl" />
               <div v-else class="diary-card-thumb-placeholder">📖</div>
@@ -153,7 +176,7 @@ onMounted(load)
       <template v-else>
         <div v-if="!scraps.length" class="empty"><div class="empty-icon">🔖</div><p class="empty-text">스크랩한 일기가 없습니다</p></div>
         <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
-          <div v-for="s in scraps" :key="s.scrapId" class="diary-card" @click="router.push(`/diaries/${s.diaryId}`)">
+          <div v-for="s in scraps" :key="s.id" class="diary-card" @click="router.push(`/diaries/${s.id}`)">
             <div class="diary-card-thumb">
               <img v-if="s.thumbnailUrl" :src="s.thumbnailUrl" />
               <div v-else class="diary-card-thumb-placeholder">📖</div>
@@ -186,6 +209,9 @@ onMounted(load)
             <div class="form-group">
               <label class="form-label">닉네임</label>
               <input v-model="editForm.nickname" type="text" class="form-input" minlength="2" maxlength="20" />
+              <p v-if="editNicknameStatus === 'checking'" class="text-sm" style="margin-top:4px;color:var(--color-text-3)">확인 중...</p>
+              <p v-else-if="editNicknameStatus === 'available'" class="text-sm" style="margin-top:4px;color:var(--color-success)">사용 가능한 닉네임입니다.</p>
+              <p v-else-if="editNicknameStatus === 'taken'" class="text-sm text-danger" style="margin-top:4px">이미 사용 중인 닉네임입니다.</p>
             </div>
           </div>
           <div class="modal-footer">

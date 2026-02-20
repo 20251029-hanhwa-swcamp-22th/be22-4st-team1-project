@@ -19,8 +19,8 @@ async function load() {
   loading.value = true
   try {
     const [fRes, pRes] = await Promise.all([friendApi.getFriends(), friendApi.getPending()])
-    friends.value = fRes?.data?.friends || mockFriends
-    pending.value = pRes?.data?.pending || mockPending
+    friends.value = Array.isArray(fRes?.data) ? fRes.data : mockFriends
+    pending.value = Array.isArray(pRes?.data?.content) ? pRes.data.content : (Array.isArray(pRes?.data) ? pRes.data : mockPending)
   } catch {
     friends.value = mockFriends
     pending.value = mockPending
@@ -47,7 +47,7 @@ async function sendRequest(userId) {
     await friendApi.sendRequest(userId)
     alert('친구 요청을 보냈습니다!')
     searchResults.value = searchResults.value.map(u =>
-      u.userId === userId ? { ...u, friendStatus: 'PENDING' } : u
+      u.id === userId ? { ...u, friendStatus: 'PENDING' } : u
     )
   } catch (e) {
     alert(e?.message || '요청 실패')
@@ -87,7 +87,7 @@ onMounted(load)
         </button>
       </div>
       <div v-if="searchResults.length" style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-        <div v-for="u in searchResults" :key="u.userId" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-md);background:var(--color-bg-3)">
+        <div v-for="u in searchResults" :key="u.id" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-md);background:var(--color-bg-3)">
           <div class="ml-avatar" style="width:34px;height:34px">{{ u.nickname.charAt(0) }}</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:600">{{ u.nickname }}</div>
@@ -96,7 +96,7 @@ onMounted(load)
             class="btn btn-sm"
             :class="u.friendStatus === 'ACCEPTED' ? 'btn-success' : u.friendStatus === 'PENDING' ? 'btn-ghost' : 'btn-primary'"
             :disabled="u.friendStatus === 'ACCEPTED' || u.friendStatus === 'PENDING'"
-            @click="sendRequest(u.userId)"
+            @click="sendRequest(u.id)"
           >
             <UserCheck v-if="u.friendStatus==='ACCEPTED'" :size="13" />
             <UserPlus v-else :size="13" />
@@ -148,10 +148,10 @@ onMounted(load)
       <div v-else style="display:flex;flex-direction:column;gap:8px">
         <div v-for="p in pending" :key="p.friendId" class="card" style="display:flex;align-items:center;gap:12px">
           <div class="ml-avatar" style="width:40px;height:40px">
-            <span>{{ p.nickname.charAt(0) }}</span>
+            <span>{{ (p.requesterNickname || p.nickname || '?').charAt(0) }}</span>
           </div>
           <div style="flex:1">
-            <div style="font-size:14px;font-weight:600">{{ p.nickname }}</div>
+            <div style="font-size:14px;font-weight:600">{{ p.requesterNickname || p.nickname }}</div>
             <div style="font-size:11px;color:var(--color-text-3)">{{ new Date(p.requestedAt).toLocaleDateString('ko-KR') }}</div>
           </div>
           <button class="btn btn-success btn-sm" @click="respond(p.friendId, 'ACCEPTED')">

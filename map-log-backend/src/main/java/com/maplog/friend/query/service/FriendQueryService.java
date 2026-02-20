@@ -41,7 +41,8 @@ public class FriendQueryService {
                             .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
                     return new FriendSummaryResponse(
                             f.getId(), friendUser.getId(),
-                            friendUser.getNickname(), friendUser.getProfileImageUrl()
+                            friendUser.getNickname(), friendUser.getProfileImageUrl(),
+                            f.getUpdatedAt()
                     );
                 })
                 .toList();

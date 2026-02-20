@@ -25,7 +25,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nickname;
 
     private String profileImageUrl;
@@ -37,6 +37,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status;
+
+    private String suspensionReason;
+
+    private LocalDateTime suspensionExpiresAt;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -66,8 +70,10 @@ public class User {
         this.deletedAt = LocalDateTime.now();
     }
 
-    public void changeStatus(UserStatus status) {
+    public void changeStatus(UserStatus status, String suspensionReason, LocalDateTime suspensionExpiresAt) {
         this.status = status;
+        this.suspensionReason = suspensionReason;
+        this.suspensionExpiresAt = suspensionExpiresAt;
     }
 
     public boolean isDeleted() {

@@ -12,7 +12,17 @@ public interface NotificationCommandRepository extends JpaRepository<Notificatio
 
     Page<Notification> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
+    Page<Notification> findByUserIdAndReadOrderByCreatedAtDesc(Long userId, boolean read, Pageable pageable);
+
     @Modifying
     @Query("UPDATE Notification n SET n.read = true WHERE n.userId = :userId")
     void markAllAsRead(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.userId = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.userId = :userId AND n.read = :read")
+    void deleteByUserIdAndRead(@Param("userId") Long userId, @Param("read") boolean read);
 }

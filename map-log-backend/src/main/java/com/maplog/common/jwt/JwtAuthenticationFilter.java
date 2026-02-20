@@ -1,14 +1,11 @@
 package com.maplog.common.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maplog.common.exception.BusinessException;
-import com.maplog.common.response.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,14 +14,12 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
-    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -44,8 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
             } catch (BusinessException e) {
-                writeErrorResponse(response, e);
-                return;
+                // 토큰이 만료/유효하지 않은 경우 SecurityContext를 설정하지 않고 필터 체인을 계속 진행
+                // permitAll() 엔드포인트는 정상 동작하고, 인증이 필요한 엔드포인트는 Spring Security가 401 처리
             }
         }
 
@@ -60,12 +55,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    private void writeErrorResponse(HttpServletResponse response, BusinessException e) throws IOException {
-        response.setStatus(e.getErrorCode().getHttpStatus().value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-
-        ApiResponse<?> body = ApiResponse.error(e.getErrorCode());
-        response.getWriter().write(objectMapper.writeValueAsString(body));
-    }
 }
+

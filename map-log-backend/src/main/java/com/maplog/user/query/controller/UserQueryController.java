@@ -35,10 +35,16 @@ public class UserQueryController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @GetMapping("/check-nickname")
+    public ResponseEntity<ApiResponse<Boolean>> checkNickname(@RequestParam String nickname) {
+        boolean available = userQueryService.isNicknameAvailable(nickname);
+        return ResponseEntity.ok(ApiResponse.success(available));
+    }
+
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<UserSummaryResponse>>> searchUsers(
-            @RequestParam String keyword) {
-        List<UserSummaryResponse> responses = userQueryService.searchUsers(keyword);
+            @RequestParam String nickname) {
+        List<UserSummaryResponse> responses = userQueryService.searchUsers(nickname);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 

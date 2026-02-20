@@ -11,9 +11,10 @@ export const authApi = {
         return api.post('/api/auth/login', payload)
     },
 
-    /** 토큰 재발급 - POST /api/auth/refresh (Bearer RefreshToken) */
+    /** 토큰 재발급 - POST /api/auth/refresh */
     refresh() {
-        return api.post('/api/auth/refresh')
+        const refreshToken = localStorage.getItem('ml_refresh_token')
+        return api.post('/api/auth/refresh', { refreshToken })
     },
 
     /** 로그아웃 - POST /api/auth/logout */
