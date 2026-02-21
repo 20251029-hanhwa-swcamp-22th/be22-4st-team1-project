@@ -1,4 +1,7 @@
 <script setup>
+/**
+ * 일기 상세 조회 및 수정/삭제/공유 기능을 담당하는 뷰 컴포넌트입니다.
+ */
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { diaryApi } from '@/app/api/diary.js'
@@ -11,24 +14,28 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
+// ── 데이터 상태 ──
 const diary = ref(null)
 const loading = ref(true)
 const isScrapped = ref(false)
 const imgIdx = ref(0)
 
-// 수정 모달
+// ── 수정 모달 상태 ──
 const showEdit = ref(false)
 const friends = ref([])
 const editForm = ref({ title:'', content:'', address:'', locationName:'', newImages:[], deleteImageIds:[], imagePreviews:[], visibility:'PRIVATE', sharedUserIds:[] })
 const editLoading = ref(false)
 
+/** 현재 사용자가 일기 주인인지 확인 */
 const isOwner = computed(() => diary.value?.userId === auth.userId)
 
+/** 일기 데이터 및 스크랩 상태 로드 */
 async function load() {
   loading.value = true
   try {
     const res = await diaryApi.getDiary(route.params.diaryId)
-    diary.value = res?.data || mockDiaries[0]
+    diary.value = res?.data
+    isScrapped.value = res?.data?.scraped || false
   } catch {
     diary.value = mockDiaries[0]
   } finally {
@@ -36,6 +43,7 @@ async function load() {
   }
 }
 
+/** 공유를 위한 친구 목록 로드 */
 async function loadFriends() {
   try {
     const res = await friendApi.getFriends()
@@ -45,6 +53,10 @@ async function loadFriends() {
   }
 }
 
+/** 
+ * 스크랩 상태를 반전(Toggle)시킵니다. 
+ * 백엔드 API 연동을 통해 실제 DB에 반영합니다.
+ */
 async function toggleScrap() {
   try {
     if (isScrapped.value) {
@@ -58,6 +70,7 @@ async function toggleScrap() {
   }
 }
 
+/** 일기 삭제 요청 */
 async function deleteDiary() {
   if (!confirm('정말 삭제하시겠습니까?')) return
   try {
@@ -68,7 +81,7 @@ async function deleteDiary() {
   }
 }
 
-// 수정
+/** 수정 모달 오픈 및 데이터 초기화 */
 async function openEdit() {
   await loadFriends()
   editForm.value = {
@@ -78,13 +91,13 @@ async function openEdit() {
     locationName: diary.value.locationName || '',
     visitedAt: diary.value.visitedAt || new Date().toISOString().slice(0, 19),
     visibility: diary.value.visibility || 'PRIVATE',
-    // 기존 공유 목록이 현재 DTO에 포함되어 있지 않으므로, 백엔드 로직에 따라 초기화
     sharedUserIds: [], 
     newImages: [], deleteImageIds: [], imagePreviews: []
   }
   showEdit.value = true
 }
 
+/** 수정 내용 저장 (FormData 활용) */
 async function saveEdit() {
   if (!editForm.value.title || !editForm.value.content) { alert('제목/내용 필수'); return }
   editLoading.value = true
@@ -129,13 +142,6 @@ function formatDate(dt) {
   return new Date(dt).toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })
 }
 
-function toImageUrl(path) {
-  if (!path) return ''
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
-  const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-  return `${base}${path.startsWith('/') ? '' : '/'}${path}`
-}
-
 onMounted(load)
 </script>
 
@@ -143,12 +149,11 @@ onMounted(load)
   <div v-if="loading" class="loading-wrap"><div class="spinner"></div></div>
 
   <div v-else-if="diary" style="max-width:720px;margin:0 auto;padding:28px 24px">
-    <!-- 뒤로가기 -->
+    <!-- 상단 헤더 -->
     <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" @click="router.back()">
       <ArrowLeft :size="14" /> 뒤로
     </button>
 
-    <!-- 제목 / 위치 / 가시성 -->
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <h1 style="font-size:22px;font-weight:700;margin-bottom:6px">{{ diary.title }}</h1>
@@ -170,7 +175,7 @@ onMounted(load)
 
     <!-- 이미지 갤러리 -->
     <div v-if="diary.images?.length" style="border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;position:relative;background:var(--color-bg-3)">
-      <img :src="toImageUrl(diary.images[imgIdx]?.imageUrl)" style="width:100%;max-height:360px;object-fit:cover" />
+      <img :src="diary.images[imgIdx]?.imageUrl" style="width:100%;max-height:360px;object-fit:cover" />
       <div v-if="diary.images.length > 1" style="position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px">
         <button
           v-for="(_, i) in diary.images" :key="i"
@@ -183,12 +188,11 @@ onMounted(load)
       <Image :size="32" />
     </div>
 
-    <!-- 본문 -->
     <div class="card" style="margin-bottom:20px">
       <p style="white-space:pre-wrap;line-height:1.8;font-size:14px">{{ diary.content }}</p>
     </div>
 
-    <!-- 액션 버튼 -->
+    <!-- 하단 버튼 영역 -->
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <template v-if="isOwner">
         <button class="btn btn-ghost btn-sm" @click="openEdit"><Pencil :size="14" /> 수정</button>
@@ -221,7 +225,6 @@ onMounted(load)
             <textarea v-model="editForm.content" class="form-input" style="min-height:120px"></textarea>
           </div>
           
-          <!-- 친구 공유 선택 -->
           <div class="form-group">
             <label class="form-label" style="display:flex;align-items:center;gap:6px">
               <Users :size="14" /> 친구와 공유하기
@@ -233,7 +236,6 @@ onMounted(load)
                 <span style="font-size:13px">{{ f.nickname }}</span>
               </label>
             </div>
-            <p class="text-xs text-muted mt-2">* 공유 중인 친구를 체크 해제하면 해당 친구의 접근 권한이 삭제됩니다.</p>
           </div>
 
           <div class="form-group">
@@ -247,13 +249,12 @@ onMounted(load)
             </div>
           </div>
 
-          <!-- 기존 이미지 삭제 선택 -->
           <div v-if="diary.images?.length" class="form-group">
             <label class="form-label">기존 사진 삭제 선택</label>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <label v-for="img in diary.images" :key="img.imageId" style="position:relative;cursor:pointer">
                 <input type="checkbox" :value="img.imageId" v-model="editForm.deleteImageIds" style="position:absolute;top:4px;left:4px;accent-color:var(--color-danger)" />
-                <img :src="toImageUrl(img.imageUrl)" style="width:60px;height:60px;object-fit:cover;border-radius:var(--radius-sm);opacity:.8" />
+                <img :src="img.imageUrl" style="width:60px;height:60px;object-fit:cover;border-radius:var(--radius-sm);opacity:.8" />
               </label>
             </div>
           </div>

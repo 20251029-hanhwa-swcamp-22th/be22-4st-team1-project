@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * 메인 지도 화면을 담당하는 컴포넌트입니다.
+ * 카카오맵 SDK 연동 및 위치 기반 일기 작성을 지원합니다.
+ */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { diaryApi } from '@/app/api/diary.js'
@@ -38,7 +42,7 @@ const error = ref('')
 // ── 마커 팝업 ──
 const popup = ref(null)
 
-// ── 카카오맵 로드 ──
+/** 카카오맵 SDK 로드 */
 function loadKakaoMap() {
   if (!kakaoKey || kakaoKey === '발급받은_카카오맵_JavaScript_키_입력') {
     mapError.value = '.env.local에 VITE_KAKAO_MAP_KEY를 입력해주세요.'
@@ -58,6 +62,7 @@ function loadKakaoMap() {
   })
 }
 
+/** 지도 초기화 */
 function initMap() {
   const center = new window.kakao.maps.LatLng(37.5665, 126.9780)
   map = new window.kakao.maps.Map(mapContainer.value, {
@@ -65,14 +70,13 @@ function initMap() {
     level: 5
   })
 
-  // 지도 클릭 시 위치 선택
+  // 지도 클릭 시 위치 선택 및 작성 모달 오픈
   window.kakao.maps.event.addListener(map, 'click', (e) => {
     const lat = e.latLng.getLat()
     const lng = e.latLng.getLng()
     selectedLocation.value = { lat, lng }
     form.value.latitude = lat
     form.value.longitude = lng
-    // 간단히 좌표로 주소 표시 (실제는 좌표→주소 변환 API 사용)
     form.value.locationName = `위도 ${lat.toFixed(4)}, 경도 ${lng.toFixed(4)}`
     showModal.value = true
   })
@@ -83,6 +87,7 @@ function initMap() {
   loadMarkers()
 }
 
+/** 화면 범위 내 마커 목록 로드 */
 async function loadMarkers() {
   if (!map) return
   const bounds = map.getBounds()
@@ -101,6 +106,7 @@ async function loadMarkers() {
   }
 }
 
+/** 친구 목록 로드 (공유용) */
 async function loadFriends() {
   try {
     const res = await friendApi.getFriends()
@@ -110,8 +116,8 @@ async function loadFriends() {
   }
 }
 
+/** 지도 마커 렌더링 */
 function renderMarkers(list) {
-  // 기존 마커 제거
   markers.forEach(m => m.setMap(null))
   markers = []
 
@@ -127,7 +133,7 @@ function renderMarkers(list) {
   })
 }
 
-// ── 이미지 업로드 ──
+/** 이미지 미리보기 생성 */
 function onImageChange(e) {
   const files = Array.from(e.target.files)
   if (form.value.images.length + files.length > 5) {
@@ -142,12 +148,7 @@ function onImageChange(e) {
   })
 }
 
-function removeImage(idx) {
-  form.value.images.splice(idx, 1)
-  form.value.imagePreviews.splice(idx, 1)
-}
-
-// ── 일기 저장 ──
+/** 일기 저장 */
 async function saveDiary() {
   error.value = ''
   if (!form.value.title.trim() || !form.value.content.trim()) {
@@ -165,14 +166,13 @@ async function saveDiary() {
     if (form.value.address) fd.append('address', form.value.address)
     fd.append('visitedAt', new Date().toISOString().slice(0, 19))
     
-    // 친구 선택 시 FRIENDS_ONLY로 변경
     const visibility = form.value.sharedUserIds.length > 0 ? 'FRIENDS_ONLY' : 'PRIVATE'
     fd.append('visibility', visibility)
     
     form.value.sharedUserIds.forEach(id => fd.append('sharedUserIds', id))
     form.value.images.forEach(img => fd.append('images', img))
 
-    const res = await diaryApi.createDiary(fd)
+    await diaryApi.createDiary(fd)
     closeModal()
     loadMarkers()
     alert(`일기가 작성되었습니다!`)
@@ -208,10 +208,10 @@ onUnmounted(() => {
 <template>
   <div style="position:relative;width:100%;height:100vh;overflow:hidden;">
 
-    <!-- 카카오맵 -->
+    <!-- 카카오맵 메인 영역 -->
     <div ref="mapContainer" style="width:100%;height:100%;background:var(--color-bg-3)"></div>
 
-    <!-- 지도 키 없을 때 안내 -->
+    <!-- 지도 키 미설정 시 안내 가이드 -->
     <div v-if="mapError" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--color-bg-2);flex-direction:column;gap:16px">
       <div style="font-size:48px">🗺️</div>
       <p style="color:var(--color-text-2);text-align:center;line-height:1.8">
@@ -220,7 +220,7 @@ onUnmounted(() => {
           지도 없이도 마커 목록은 아래에 표시됩니다.
         </span>
       </p>
-      <!-- 목업 마커 목록 -->
+      <!-- 목업/실제 마커 리스트 대체 표시 -->
       <div style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;width:320px">
         <div
           v-for="m in mockMarkers" :key="m.id"
@@ -237,7 +237,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 일기 쓰기 버튼 (지도가 있을 때) -->
+    <!-- 일기 쓰기 버튼 -->
     <button
       v-if="mapReady"
       class="btn btn-primary"
@@ -247,7 +247,7 @@ onUnmounted(() => {
       <Plus :size="18" /> 일기 쓰기
     </button>
 
-    <!-- 마커 팝업 -->
+    <!-- 마커 클릭 팝업 -->
     <div
       v-if="popup"
       style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:var(--color-bg-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px 20px;min-width:220px;box-shadow:var(--shadow-lg);z-index:10"
@@ -275,7 +275,6 @@ onUnmounted(() => {
             <button class="modal-close" @click="closeModal">✕</button>
           </div>
           <div class="modal-body" style="max-height:70vh;overflow-y:auto">
-            <!-- 위치 표시 -->
             <div v-if="form.locationName" style="display:flex;align-items:center;gap:6px;margin-bottom:14px;color:var(--color-primary);font-size:13px">
               <MapPin :size="14" />
               {{ form.locationName }}
@@ -307,7 +306,6 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- 친구 공유 선택 -->
             <div class="form-group">
               <label class="form-label" style="display:flex;align-items:center;gap:6px">
                 <Users :size="14" /> 친구와 공유하기
