@@ -53,6 +53,7 @@ public class SecurityConfig {
                         "/api/auth/refresh"
                     ).permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/users/check-nickname").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                     .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                     .anyRequest().authenticated())
             .addFilterBefore(
