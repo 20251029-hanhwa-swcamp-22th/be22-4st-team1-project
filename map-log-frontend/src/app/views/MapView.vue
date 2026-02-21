@@ -92,7 +92,7 @@ async function loadMarkers() {
       swLat: sw.getLat(), swLng: sw.getLng(),
       neLat: ne.getLat(), neLng: ne.getLng()
     })
-    const list = res?.data?.markers || mockMarkers
+    const list = Array.isArray(res?.data) ? res.data : []
     renderMarkers(list)
   } catch {
     renderMarkers(mockMarkers)

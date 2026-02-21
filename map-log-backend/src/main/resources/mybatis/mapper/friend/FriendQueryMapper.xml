@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.maplog.friend.query.mapper.FriendQueryMapper">
+
+    <!-- 친구 목록: 내가 요청자이면 receiver, 내가 수신자이면 requester 를 "상대방"으로 반환 -->
+    <select id="findFriends"
+            resultType="com.maplog.friend.query.dto.FriendSummaryResponse">
+        SELECT
+            f.id AS friend_id,
+            CASE
+                WHEN f.requester_id = #{userId} THEN f.receiver_id
+                ELSE f.requester_id
+            END AS user_id,
+            u.nickname,
+            u.profile_image_url,
+            f.updated_at AS responded_at
+        FROM friends f
+        INNER JOIN users u ON u.id = CASE
+                WHEN f.requester_id = #{userId} THEN f.receiver_id
+                ELSE f.requester_id
+            END
+        WHERE (f.requester_id = #{userId} OR f.receiver_id = #{userId})
+          AND f.status = 'ACCEPTED'
+          AND u.deleted_at IS NULL
+        ORDER BY f.updated_at DESC
+    </select>
+
+    <!-- 받은 친구 요청 목록 (PENDING) -->
+    <select id="findPendingRequests"
+            resultType="com.maplog.friend.query.dto.FriendRequestResponse">
+        SELECT
+            f.id AS friend_id,
+            f.requester_id,
+            u.nickname         AS requester_nickname,
+            u.profile_image_url AS requester_profile_image_url,
+            f.created_at       AS requested_at
+        FROM friends f
+        INNER JOIN users u ON u.id = f.requester_id
+        WHERE f.receiver_id = #{userId}
+          AND f.status = 'PENDING'
+          AND u.deleted_at IS NULL
+        ORDER BY f.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countPendingRequests" resultType="long">
+        SELECT COUNT(*)
+        FROM friends f
+        INNER JOIN users u ON u.id = f.requester_id
+        WHERE f.receiver_id = #{userId}
+          AND f.status = 'PENDING'
+          AND u.deleted_at IS NULL
+    </select>
+
+    <!-- 피드: 친구들의 PUBLIC/FRIENDS_ONLY 일기 -->
+    <select id="findFeed"
+            resultType="com.maplog.diary.query.dto.DiarySummaryResponse">
+        SELECT d.id, d.title, d.location_name, d.visited_at, d.visibility, d.created_at
+        FROM diaries d
+        WHERE d.user_id IN (
+            SELECT CASE
+                       WHEN f.requester_id = #{userId} THEN f.receiver_id
+                       ELSE f.requester_id
+                   END
+            FROM friends f
+            WHERE (f.requester_id = #{userId} OR f.receiver_id = #{userId})
+              AND f.status = 'ACCEPTED'
+        )
+          AND d.visibility IN ('PUBLIC', 'FRIENDS_ONLY')
+          AND d.deleted_at IS NULL
+        ORDER BY d.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countFeed" resultType="long">
+        SELECT COUNT(*)
+        FROM diaries d
+        WHERE d.user_id IN (
+            SELECT CASE
+                       WHEN f.requester_id = #{userId} THEN f.receiver_id
+                       ELSE f.requester_id
+                   END
+            FROM friends f
+            WHERE (f.requester_id = #{userId} OR f.receiver_id = #{userId})
+              AND f.status = 'ACCEPTED'
+        )
+          AND d.visibility IN ('PUBLIC', 'FRIENDS_ONLY')
+          AND d.deleted_at IS NULL
+    </select>
+
+    <select id="isFriend" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM friends
+        WHERE status = 'ACCEPTED'
+          AND (
+              (requester_id = #{userId1} AND receiver_id = #{userId2})
+              OR
+              (requester_id = #{userId2} AND receiver_id = #{userId1})
+          )
+    </select>
+
+</mapper>

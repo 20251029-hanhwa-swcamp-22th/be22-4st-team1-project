@@ -43,6 +43,7 @@ public class AdminUserService {
                 u.getNickname(),
                 u.getRole().name(),
                 u.getStatus().name(),
+                u.getSuspensionReason(),
                 u.getCreatedAt()
         );
     }

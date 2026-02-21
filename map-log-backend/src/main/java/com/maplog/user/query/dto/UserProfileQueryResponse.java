@@ -1,12 +1,19 @@
 package com.maplog.user.query.dto;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
-public record UserProfileQueryResponse(
-        Long id,
-        String email,
-        String nickname,
-        String profileImageUrl,
-        String role,
-        LocalDateTime createdAt
-) {}
+@Getter
+@Setter
+@NoArgsConstructor
+public class UserProfileQueryResponse {
+    private Long id;
+    private String email;
+    private String nickname;
+    private String profileImageUrl;
+    private String role;
+    private LocalDateTime createdAt;
+}

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.maplog.notification.query.mapper.NotificationQueryMapper">
+
+    <select id="findNotifications"
+            resultType="com.maplog.notification.query.dto.NotificationResponse">
+        SELECT id, type, reference_id, message, `read`, created_at
+        FROM notifications
+        WHERE user_id = #{userId}
+        <if test="readFilter != null">
+            AND `read` = #{readFilter}
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countNotifications" resultType="long">
+        SELECT COUNT(*)
+        FROM notifications
+        WHERE user_id = #{userId}
+        <if test="readFilter != null">
+            AND `read` = #{readFilter}
+        </if>
+    </select>
+
+</mapper>

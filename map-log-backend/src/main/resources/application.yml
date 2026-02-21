@@ -22,6 +22,11 @@ jwt:
   access-token-expiration: 1800000     # 30분 (ms)
   refresh-token-expiration: 1209600000 # 14일 (ms)
 
+# MyBatis
+mybatis:
+  config-location: classpath:mybatis/mybatis-config.xml
+  mapper-locations: classpath:mybatis/mapper/**/*.xml
+
 # 서버 공통
 server:
   port: 8080
