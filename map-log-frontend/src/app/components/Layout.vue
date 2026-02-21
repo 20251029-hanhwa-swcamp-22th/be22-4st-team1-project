@@ -1,21 +1,25 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import { MapPin, Rss, Users, Bell, User, LogOut, Shield } from 'lucide-vue-next'
 import { useAuthStore } from '@/app/stores/auth.js'
-import { notificationApi } from '@/app/api/notification.js'
+import { useNotificationStore } from '@/app/stores/notification.js'
 
 const auth = useAuthStore()
+const notificationStore = useNotificationStore()
 const router = useRouter()
-
-const unreadCount = ref(0)
 
 const navItems = computed(() => {
   const items = [
     { to: '/map',           label: '지도',    icon: MapPin },
     { to: '/feed',          label: '피드',    icon: Rss },
     { to: '/friends',       label: '친구',    icon: Users },
-    { to: '/notifications', label: '알림',    icon: Bell, badge: unreadCount.value || null },
+    { 
+      to: '/notifications', 
+      label: '알림',    
+      icon: Bell, 
+      badge: notificationStore.unreadCount || null 
+    },
     { to: '/mypage',        label: '마이페이지', icon: User }
   ]
   if (auth.isAdmin) {
@@ -29,21 +33,16 @@ const avatarInitial = computed(() => {
   return n ? n.charAt(0).toUpperCase() : '?'
 })
 
-async function fetchUnread() {
-  try {
-    const res = await notificationApi.getNotifications({ isRead: 'N' })
-    unreadCount.value = res?.data?.totalElements || res?.data?.content?.length || 0
-  } catch (_) {
-    // 미연결 시 무시
-  }
-}
-
 async function handleLogout() {
   await auth.logout()
   router.push('/login')
 }
 
-onMounted(fetchUnread)
+onMounted(() => {
+  if (auth.isAuthenticated) {
+    notificationStore.fetchNotifications()
+  }
+})
 </script>
 
 <template>
