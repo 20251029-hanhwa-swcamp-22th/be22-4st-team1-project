@@ -39,12 +39,13 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
-    // AWS S3
-    implementation 'software.amazon.awssdk:s3:2.25.10'
+    // AWS SDK v1 (유지보수가 종료되었으나, 가장 확실하고 안정적인 해결을 위해 사용)
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.500'
 
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.projectlombok:lombok'
+    
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'com.h2database:h2'

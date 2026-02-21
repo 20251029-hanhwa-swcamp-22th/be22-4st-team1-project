@@ -2,6 +2,7 @@ package com.maplog.diary.query.service;
 
 import com.maplog.common.exception.BusinessException;
 import com.maplog.common.exception.ErrorCode;
+import com.maplog.common.storage.FileStorageService;
 import com.maplog.diary.command.domain.Diary;
 import com.maplog.diary.command.domain.Visibility;
 import com.maplog.diary.command.repository.DiaryCommandRepository;
@@ -30,6 +31,7 @@ public class DiaryQueryService {
     private final UserCommandRepository userCommandRepository;
     private final DiaryShareRepository diaryShareRepository;
     private final DiaryQueryMapper diaryQueryMapper;
+    private final FileStorageService fileStorageService;
 
     public DiaryDetailResponse getDiaryDetail(String email, Long diaryId) {
         User requestingUser = getUser(email);
@@ -43,6 +45,14 @@ public class DiaryQueryService {
         if (response == null) {
             throw new BusinessException(ErrorCode.DIARY_NOT_FOUND);
         }
+
+        // 이미지 URL들을 Presigned URL로 변환
+        if (response.getImages() != null) {
+            response.getImages().forEach(img -> 
+                img.setImageUrl(fileStorageService.generatePresignedUrl(img.getImageUrl()))
+            );
+        }
+        
         return response;
     }
 
@@ -81,17 +91,11 @@ public class DiaryQueryService {
     }
 
     private boolean canAccess(User requestingUser, Diary diary) {
-        // 본인 일기면 무조건 접근 가능
         if (diary.isOwner(requestingUser.getId())) return true;
-        
-        // 비공개면 접근 불가
         if (diary.getVisibility() == Visibility.PRIVATE) return false;
-        
-        // 친구 공개인 경우 diary_shares 테이블에 정보가 있어야 함
         if (diary.getVisibility() == Visibility.FRIENDS_ONLY) {
             return diaryShareRepository.existsByDiaryIdAndUserId(diary.getId(), requestingUser.getId());
         }
-        
         return false;
     }
 

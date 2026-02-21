@@ -1,5 +1,8 @@
 package com.maplog.common.storage;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.maplog.common.exception.BusinessException;
 import com.maplog.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -7,13 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetUrlRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -21,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class S3FileStorageService implements FileStorageService {
 
-    private final S3Client s3Client;
+    private final AmazonS3 amazonS3;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -39,18 +38,13 @@ public class S3FileStorageService implements FileStorageService {
         String key = "diaries/" + UUID.randomUUID() + extension;
 
         try {
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .contentType(file.getContentType())
-                    .build();
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(file.getContentType());
+            metadata.setContentLength(file.getSize());
 
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+            amazonS3.putObject(bucket, key, file.getInputStream(), metadata);
 
-            return s3Client.utilities().getUrl(GetUrlRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .build()).toString();
+            return amazonS3.getUrl(bucket, key).toString();
 
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
@@ -60,18 +54,32 @@ public class S3FileStorageService implements FileStorageService {
     @Override
     public void delete(String fileUrl) {
         if (fileUrl == null || !fileUrl.contains(bucket)) return;
-
-        // URL에서 key 추출 (https://bucket.s3.region.amazonaws.com/key)
-        String key = fileUrl.substring(fileUrl.lastIndexOf(".com/") + 5);
-
+        String key = extractKey(fileUrl);
         try {
-            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .build();
-            s3Client.deleteObject(deleteObjectRequest);
+            amazonS3.deleteObject(bucket, key);
         } catch (Exception ignored) {
-            // 삭제 실패는 핵심 로직이 아니므로 로그만 남기거나 무시
         }
+    }
+
+    @Override
+    public String generatePresignedUrl(String fileUrl) {
+        if (fileUrl == null || !fileUrl.contains(bucket)) return fileUrl;
+
+        String key = extractKey(fileUrl);
+
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime();
+        expTimeMillis += 1000 * 60 * 60; // 1시간
+        expiration.setTime(expTimeMillis);
+
+        return amazonS3.generatePresignedUrl(bucket, key, expiration, HttpMethod.GET).toString();
+    }
+
+    private String extractKey(String fileUrl) {
+        // AWS v1 getUrl은 보통 https://bucket.s3.region.amazonaws.com/key 형태임
+        if (fileUrl.contains(".com/")) {
+            return fileUrl.substring(fileUrl.lastIndexOf(".com/") + 5);
+        }
+        return fileUrl;
     }
 }

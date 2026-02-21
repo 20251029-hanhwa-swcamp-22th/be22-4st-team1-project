@@ -48,4 +48,9 @@ public class LocalFileStorageService implements FileStorageService {
         } catch (IOException ignored) {
         }
     }
+
+    @Override
+    public String generatePresignedUrl(String fileUrl) {
+        return fileUrl; // 로컬은 서명이 필요 없음
+    }
 }

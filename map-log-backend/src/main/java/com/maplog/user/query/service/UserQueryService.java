@@ -2,6 +2,7 @@ package com.maplog.user.query.service;
 
 import com.maplog.common.exception.BusinessException;
 import com.maplog.common.exception.ErrorCode;
+import com.maplog.common.storage.FileStorageService;
 import com.maplog.user.command.repository.UserCommandRepository;
 import com.maplog.user.query.dto.UserProfileQueryResponse;
 import com.maplog.user.query.dto.UserSummaryResponse;
@@ -19,12 +20,18 @@ public class UserQueryService {
 
     private final UserCommandRepository userCommandRepository;
     private final UserQueryMapper userQueryMapper;
+    private final FileStorageService fileStorageService;
 
     public UserProfileQueryResponse getMyProfile(String email) {
         UserProfileQueryResponse response = userQueryMapper.findMyProfile(email);
         if (response == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
+        
+        if (response.getProfileImageUrl() != null) {
+            response.setProfileImageUrl(fileStorageService.generatePresignedUrl(response.getProfileImageUrl()));
+        }
+        
         return response;
     }
 
@@ -33,6 +40,12 @@ public class UserQueryService {
     }
 
     public List<UserSummaryResponse> searchUsers(String keyword) {
-        return userQueryMapper.searchUsers(keyword);
+        List<UserSummaryResponse> responses = userQueryMapper.searchUsers(keyword);
+        responses.forEach(user -> {
+            if (user.getProfileImageUrl() != null) {
+                user.setProfileImageUrl(fileStorageService.generatePresignedUrl(user.getProfileImageUrl()));
+            }
+        });
+        return responses;
     }
 }
