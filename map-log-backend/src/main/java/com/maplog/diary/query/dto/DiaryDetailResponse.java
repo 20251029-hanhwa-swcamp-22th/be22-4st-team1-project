@@ -1,21 +1,28 @@
 package com.maplog.diary.query.dto;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record DiaryDetailResponse(
-        Long id,
-        Long userId,
-        String authorNickname,
-        String title,
-        String content,
-        Double latitude,
-        Double longitude,
-        String locationName,
-        String address,
-        LocalDateTime visitedAt,
-        String visibility,
-        LocalDateTime createdAt,
-        boolean scraped,
-        List<DiaryImageResponse> images
-) {}
+@Getter
+@Setter
+@NoArgsConstructor
+public class DiaryDetailResponse {
+    private Long id;
+    private Long userId;
+    private String authorNickname;
+    private String title;
+    private String content;
+    private Double latitude;
+    private Double longitude;
+    private String locationName;
+    private String address;
+    private LocalDateTime visitedAt;
+    private String visibility;
+    private LocalDateTime createdAt;
+    private boolean scraped;
+    private List<DiaryImageResponse> images;
+}
