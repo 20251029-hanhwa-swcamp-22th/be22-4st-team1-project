@@ -17,8 +17,7 @@ const modalLoading = ref(false)
 
 const STATUS_LABELS = {
   ACTIVE: { label: '정상', cls: 'badge-success' },
-  SUSPENDED: { label: '정지', cls: 'badge-danger' },
-  WITHDRAWN: { label: '탈퇴', cls: 'badge-warning' }
+  SUSPENDED: { label: '정지', cls: 'badge-danger' }
 }
 
 async function load(p = 0) {
@@ -54,7 +53,7 @@ async function changeStatus() {
       payload.suspensionReason = form.value.suspensionReason
       if (form.value.suspensionExpiresAt) payload.suspensionExpiresAt = form.value.suspensionExpiresAt
     }
-    await adminApi.changeStatus(target.value.userId, payload)
+    await adminApi.changeStatus(target.value.id, payload)
     showModal.value = false
     await load(page.value)
   } catch (e) {
@@ -85,7 +84,6 @@ onMounted(() => load(0))
         <option value="">전체 상태</option>
         <option value="ACTIVE">정상</option>
         <option value="SUSPENDED">정지</option>
-        <option value="WITHDRAWN">탈퇴</option>
       </select>
     </div>
 
@@ -113,12 +111,12 @@ onMounted(() => load(0))
           </thead>
           <tbody>
             <tr
-              v-for="u in users" :key="u.userId"
+              v-for="u in users" :key="u.id"
               style="border-bottom:1px solid var(--color-border);transition:background .15s"
               @mouseenter="$event.target.closest('tr').style.background='var(--color-bg-2)'"
               @mouseleave="$event.target.closest('tr').style.background=''"
             >
-              <td style="padding:12px 16px;font-size:13px;color:var(--color-text-3)">{{ u.userId }}</td>
+              <td style="padding:12px 16px;font-size:13px;color:var(--color-text-3)">{{ u.id }}</td>
               <td style="padding:12px 16px;font-size:13px;font-weight:500">{{ u.nickname }}</td>
               <td style="padding:12px 16px;font-size:13px;color:var(--color-text-2)">{{ u.email }}</td>
               <td style="padding:12px 16px;font-size:12px;color:var(--color-text-3)">{{ formatDate(u.createdAt) }}</td>
@@ -132,7 +130,6 @@ onMounted(() => load(0))
               </td>
               <td style="padding:12px 16px;text-align:center">
                 <button
-                  v-if="u.status !== 'WITHDRAWN'"
                   class="btn btn-sm"
                   :class="u.status === 'ACTIVE' ? 'btn-danger' : 'btn-success'"
                   @click="openModal(u)"

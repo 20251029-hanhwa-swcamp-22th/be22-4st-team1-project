@@ -8,5 +8,6 @@ public record AdminUserResponse(
         String nickname,
         String role,
         String status,
+        String suspensionReason,
         LocalDateTime createdAt
 ) {}
