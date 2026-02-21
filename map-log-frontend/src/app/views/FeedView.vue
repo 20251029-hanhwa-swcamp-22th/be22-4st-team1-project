@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { feedApi } from '@/app/api/feed.js'
+import { diaryApi } from '@/app/api/diary.js'
 import { MapPin } from 'lucide-vue-next'
 import { mockFeed } from '@/app/data/MockData.js'
 
@@ -15,8 +15,8 @@ const totalPages = ref(0)
 async function load(p = 0) {
   loading.value = true
   try {
-    const res = await feedApi.getFeed({ page: p, size: 10 })
-    feed.value = res?.data?.content || mockFeed
+    const res = await diaryApi.getFeed({ page: p, size: 10 })
+    feed.value = res?.data?.content || []
     totalPages.value = res?.data?.totalPages || 1
     page.value = p
   } catch {
@@ -46,37 +46,37 @@ onMounted(() => load(0))
       <p class="empty-text">아직 공유받은 일기가 없습니다.<br>친구를 추가해보세요!</p>
     </div>
 
-    <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:24px">
+    <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-bottom:24px">
       <div
         v-for="item in feed"
         :key="item.id"
-        class="diary-card"
+        class="card"
+        style="cursor:pointer;padding:0;overflow:hidden;display:flex;flex-direction:column"
         @click="router.push(`/diaries/${item.id}`)"
       >
-        <div class="diary-card-thumb">
-          <img v-if="item.thumbnailUrl" :src="item.thumbnailUrl" :alt="item.title" />
-          <div v-else class="diary-card-thumb-placeholder">📖</div>
+        <div style="height:160px;background:var(--color-bg-3);display:flex;align-items:center;justify-content:center;font-size:40px">
+          📖
         </div>
-        <div class="diary-card-body">
-          <div class="diary-card-title truncate">{{ item.title }}</div>
-          <div v-if="item.locationName" class="diary-card-loc">
-            <MapPin :size="11" /> {{ item.locationName }}
+        <div style="padding:16px">
+          <div style="font-weight:700;font-size:16px;margin-bottom:6px" class="truncate">{{ item.title }}</div>
+          <div v-if="item.locationName" style="font-size:12px;color:var(--color-text-2);display:flex;align-items:center;gap:4px;margin-bottom:12px">
+            <MapPin :size="12" /> {{ item.locationName }}
           </div>
-          <div class="diary-card-meta">
-            <div class="diary-card-author">
-              <div class="ml-avatar" style="width:22px;height:22px;font-size:10px">
-                {{ item.author?.nickname?.charAt(0) }}
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600">
+              <div class="ml-avatar" style="width:24px;height:24px;font-size:11px">
+                {{ item.authorNickname?.charAt(0) }}
               </div>
-              {{ item.author?.nickname }}
+              {{ item.authorNickname }}
             </div>
-            <span class="diary-card-date">{{ formatDate(item.sharedAt) }}</span>
+            <span style="font-size:11px;color:var(--color-text-3)">{{ formatDate(item.createdAt) }}</span>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 페이징 -->
-    <div v-if="totalPages > 1" class="pagination">
+    <div v-if="totalPages > 1" class="pagination" style="margin-top:20px">
       <button class="page-btn" :disabled="page===0" @click="load(page-1)">‹</button>
       <button
         v-for="p in totalPages" :key="p"

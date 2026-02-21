@@ -5,11 +5,11 @@ import com.maplog.common.exception.ErrorCode;
 import com.maplog.diary.command.domain.Diary;
 import com.maplog.diary.command.domain.Visibility;
 import com.maplog.diary.command.repository.DiaryCommandRepository;
+import com.maplog.diary.command.repository.DiaryShareRepository;
 import com.maplog.diary.query.dto.DiaryDetailResponse;
 import com.maplog.diary.query.dto.DiaryMarkerResponse;
 import com.maplog.diary.query.dto.DiarySummaryResponse;
 import com.maplog.diary.query.mapper.DiaryQueryMapper;
-import com.maplog.friend.command.repository.FriendCommandRepository;
 import com.maplog.user.command.domain.User;
 import com.maplog.user.command.repository.UserCommandRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ public class DiaryQueryService {
 
     private final DiaryCommandRepository diaryCommandRepository;
     private final UserCommandRepository userCommandRepository;
-    private final FriendCommandRepository friendCommandRepository;
+    private final DiaryShareRepository diaryShareRepository;
     private final DiaryQueryMapper diaryQueryMapper;
 
     public DiaryDetailResponse getDiaryDetail(String email, Long diaryId) {
@@ -71,12 +71,27 @@ public class DiaryQueryService {
         return new PageImpl<>(items, pageable, total);
     }
 
+    public Page<DiarySummaryResponse> getFeedDiaries(String email, Pageable pageable) {
+        User user = getUser(email);
+        int offset = (int) pageable.getOffset();
+        int size = pageable.getPageSize();
+        List<DiarySummaryResponse> items = diaryQueryMapper.findFeedDiaries(user.getId(), offset, size);
+        long total = diaryQueryMapper.countFeedDiaries(user.getId());
+        return new PageImpl<>(items, pageable, total);
+    }
+
     private boolean canAccess(User requestingUser, Diary diary) {
+        // 본인 일기면 무조건 접근 가능
         if (diary.isOwner(requestingUser.getId())) return true;
-        if (diary.getVisibility() == Visibility.PUBLIC) return true;
+        
+        // 비공개면 접근 불가
+        if (diary.getVisibility() == Visibility.PRIVATE) return false;
+        
+        // 친구 공개인 경우 diary_shares 테이블에 정보가 있어야 함
         if (diary.getVisibility() == Visibility.FRIENDS_ONLY) {
-            return friendCommandRepository.isFriend(requestingUser.getId(), diary.getUserId());
+            return diaryShareRepository.existsByDiaryIdAndUserId(diary.getId(), requestingUser.getId());
         }
+        
         return false;
     }
 

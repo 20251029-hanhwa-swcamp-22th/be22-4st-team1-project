@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { diaryApi } from '@/app/api/diary.js'
 import { friendApi } from '@/app/api/friend.js'
 import { useAuthStore } from '@/app/stores/auth.js'
-import { MapPin, Bookmark, BookmarkCheck, Pencil, Trash2, Share2, ArrowLeft, Image } from 'lucide-vue-next'
+import { MapPin, Bookmark, BookmarkCheck, Pencil, Trash2, ArrowLeft, Image, Users, Lock, Users2 } from 'lucide-vue-next'
 import { mockDiaries, mockFriends } from '@/app/data/MockData.js'
 
 const route = useRoute()
@@ -16,15 +16,10 @@ const loading = ref(true)
 const isScrapped = ref(false)
 const imgIdx = ref(0)
 
-// 공유 모달
-const showShare = ref(false)
-const friends = ref([])
-const selectedFriends = ref([])
-const shareLoading = ref(false)
-
 // 수정 모달
 const showEdit = ref(false)
-const editForm = ref({ title:'', content:'', address:'', locationName:'', newImages:[], deleteImageIds:[], imagePreviews:[] })
+const friends = ref([])
+const editForm = ref({ title:'', content:'', address:'', locationName:'', newImages:[], deleteImageIds:[], imagePreviews:[], visibility:'PRIVATE', sharedUserIds:[] })
 const editLoading = ref(false)
 
 const isOwner = computed(() => diary.value?.userId === auth.userId)
@@ -38,6 +33,15 @@ async function load() {
     diary.value = mockDiaries[0]
   } finally {
     loading.value = false
+  }
+}
+
+async function loadFriends() {
+  try {
+    const res = await friendApi.getFriends()
+    friends.value = Array.isArray(res?.data) ? res.data : mockFriends
+  } catch {
+    friends.value = mockFriends
   }
 }
 
@@ -64,41 +68,18 @@ async function deleteDiary() {
   }
 }
 
-// 공유
-async function openShare() {
-  try {
-    const res = await friendApi.getFriends()
-    friends.value = Array.isArray(res?.data) ? res.data : mockFriends
-  } catch {
-    friends.value = mockFriends
-  }
-  showShare.value = true
-}
-
-async function doShare() {
-  if (!selectedFriends.value.length) { alert('친구를 선택해주세요.'); return }
-  shareLoading.value = true
-  try {
-    await diaryApi.shareDiary(diary.value.id, { friendIds: selectedFriends.value })
-    alert('공유 완료!')
-    showShare.value = false
-    selectedFriends.value = []
-  } catch (e) {
-    alert(e?.message || '공유 실패')
-  } finally {
-    shareLoading.value = false
-  }
-}
-
 // 수정
-function openEdit() {
+async function openEdit() {
+  await loadFriends()
   editForm.value = {
     title: diary.value.title,
     content: diary.value.content,
     address: diary.value.address || '',
     locationName: diary.value.locationName || '',
     visitedAt: diary.value.visitedAt || new Date().toISOString().slice(0, 19),
-    visibility: diary.value.visibility || 'PUBLIC',
+    visibility: diary.value.visibility || 'PRIVATE',
+    // 기존 공유 목록이 현재 DTO에 포함되어 있지 않으므로, 백엔드 로직에 따라 초기화
+    sharedUserIds: [], 
     newImages: [], deleteImageIds: [], imagePreviews: []
   }
   showEdit.value = true
@@ -114,12 +95,18 @@ async function saveEdit() {
     if (editForm.value.address) fd.append('address', editForm.value.address)
     if (editForm.value.locationName) fd.append('locationName', editForm.value.locationName)
     fd.append('visitedAt', editForm.value.visitedAt)
-    fd.append('visibility', editForm.value.visibility)
+    
+    const visibility = editForm.value.sharedUserIds.length > 0 ? 'FRIENDS_ONLY' : 'PRIVATE'
+    fd.append('visibility', visibility)
+    
+    editForm.value.sharedUserIds.forEach(id => fd.append('sharedUserIds', id))
     editForm.value.deleteImageIds.forEach(id => fd.append('deleteImageIds', id))
     editForm.value.newImages.forEach(img => fd.append('images', img))
+
     await diaryApi.updateDiary(diary.value.id, fd)
     showEdit.value = false
     await load()
+    alert('수정되었습니다.')
   } catch (e) {
     alert(e?.message || '수정 실패')
   } finally {
@@ -154,9 +141,19 @@ onMounted(load)
       <ArrowLeft :size="14" /> 뒤로
     </button>
 
-    <!-- 제목 / 위치 -->
+    <!-- 제목 / 위치 / 가시성 -->
     <div style="margin-bottom:16px">
-      <h1 style="font-size:22px;font-weight:700;margin-bottom:6px">{{ diary.title }}</h1>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h1 style="font-size:22px;font-weight:700;margin-bottom:6px">{{ diary.title }}</h1>
+        <div style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--color-text-3)">
+          <template v-if="diary.visibility === 'PRIVATE'">
+            <Lock :size="12" /> 나만보기
+          </template>
+          <template v-else>
+            <Users2 :size="12" /> 친구공유
+          </template>
+        </div>
+      </div>
       <div v-if="diary.locationName" style="display:flex;align-items:center;gap:6px;color:var(--color-text-2);font-size:13px">
         <MapPin :size="13" /> {{ diary.locationName }}
         <span v-if="diary.address" style="color:var(--color-text-3)">· {{ diary.address }}</span>
@@ -189,7 +186,6 @@ onMounted(load)
       <template v-if="isOwner">
         <button class="btn btn-ghost btn-sm" @click="openEdit"><Pencil :size="14" /> 수정</button>
         <button class="btn btn-danger btn-sm" @click="deleteDiary"><Trash2 :size="14" /> 삭제</button>
-        <button class="btn btn-ghost btn-sm" @click="openShare"><Share2 :size="14" /> 친구 공유</button>
       </template>
       <template v-else>
         <button class="btn btn-sm" :class="isScrapped ? 'btn-success' : 'btn-ghost'" @click="toggleScrap">
@@ -200,51 +196,39 @@ onMounted(load)
     </div>
   </div>
 
-  <!-- 공유 모달 -->
+  <!-- 수정 모달 -->
   <Teleport to="body">
-    <div v-if="showShare" class="modal-backdrop" @click.self="showShare=false">
-      <div class="modal">
-        <div class="modal-header">
-          <span class="modal-title">친구에게 공유</span>
-          <button class="modal-close" @click="showShare=false">✕</button>
-        </div>
-        <div class="modal-body">
-          <p class="text-muted text-sm" style="margin-bottom:12px">공유할 친구를 선택하세요</p>
-          <div style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto">
-            <label v-for="f in friends" :key="f.friendId" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-md);cursor:pointer;border:1px solid var(--color-border)">
-              <input type="checkbox" :value="f.userId" v-model="selectedFriends" style="accent-color:var(--color-primary)" />
-              <div class="ml-avatar" style="width:30px;height:30px;font-size:12px">{{ f.nickname.charAt(0) }}</div>
-              {{ f.nickname }}
-            </label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="showShare=false">취소</button>
-          <button class="btn btn-primary" :disabled="shareLoading" @click="doShare">공유하기</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 수정 모달 -->
     <div v-if="showEdit" class="modal-backdrop" @click.self="showEdit=false">
-      <div class="modal">
+      <div class="modal" style="max-width:560px">
         <div class="modal-header">
-          <span class="modal-title">일기 수정</span>
+          <span class="modal-title">📝 일기 수정</span>
           <button class="modal-close" @click="showEdit=false">✕</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="max-height:70vh;overflow-y:auto">
           <div class="form-group">
             <label class="form-label">제목</label>
             <input v-model="editForm.title" type="text" class="form-input" />
           </div>
           <div class="form-group">
             <label class="form-label">내용</label>
-            <textarea v-model="editForm.content" class="form-input"></textarea>
+            <textarea v-model="editForm.content" class="form-input" style="min-height:120px"></textarea>
           </div>
+          
+          <!-- 친구 공유 선택 -->
           <div class="form-group">
-            <label class="form-label">위치명</label>
-            <input v-model="editForm.locationName" type="text" class="form-input" />
+            <label class="form-label" style="display:flex;align-items:center;gap:6px">
+              <Users :size="14" /> 친구와 공유하기
+            </label>
+            <div style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;padding:8px;border:1px solid var(--color-border);border-radius:var(--radius-md)">
+              <label v-for="f in friends" :key="f.userId" style="display:flex;align-items:center;gap:10px;padding:6px;cursor:pointer">
+                <input type="checkbox" :value="f.userId" v-model="editForm.sharedUserIds" />
+                <div class="ml-avatar" style="width:24px;height:24px;font-size:10px">{{ f.nickname.charAt(0) }}</div>
+                <span style="font-size:13px">{{ f.nickname }}</span>
+              </label>
+            </div>
+            <p class="text-xs text-muted mt-2">* 공유 중인 친구를 체크 해제하면 해당 친구의 접근 권한이 삭제됩니다.</p>
           </div>
+
           <div class="form-group">
             <label class="form-label">사진 추가</label>
             <div class="img-upload-zone" @click="$refs.editFileInput.click()">클릭하여 추가</div>
@@ -255,6 +239,7 @@ onMounted(load)
               </div>
             </div>
           </div>
+
           <!-- 기존 이미지 삭제 선택 -->
           <div v-if="diary.images?.length" class="form-group">
             <label class="form-label">기존 사진 삭제 선택</label>
@@ -268,7 +253,10 @@ onMounted(load)
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" @click="showEdit=false">취소</button>
-          <button class="btn btn-primary" :disabled="editLoading" @click="saveEdit">저장</button>
+          <button class="btn btn-primary" :disabled="editLoading" @click="saveEdit">
+            <span v-if="editLoading" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
+            <span v-else>저장</span>
+          </button>
         </div>
       </div>
     </div>
