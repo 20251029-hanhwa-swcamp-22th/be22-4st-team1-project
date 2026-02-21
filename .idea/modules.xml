@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/be22-4st-1team-project.main.iml" filepath="$PROJECT_DIR$/.idea/modules/be22-4st-1team-project.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.maplog.be22-4st-1team-project.main.iml" filepath="$PROJECT_DIR$/.idea/modules/com.maplog.be22-4st-1team-project.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/map-diary.iml" filepath="$PROJECT_DIR$/.idea/map-diary.iml" />
     </modules>
   </component>
