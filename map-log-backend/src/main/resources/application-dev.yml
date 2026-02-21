@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: "optional:classpath:application-aws.yml"
   # 로컬 MariaDB 설정
   datasource:
     url: jdbc:mariadb://localhost:3306/maplog_dev?serverTimezone=Asia/Seoul&characterEncoding=UTF-8

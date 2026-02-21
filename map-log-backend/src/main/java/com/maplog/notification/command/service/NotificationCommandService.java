@@ -19,22 +19,32 @@ public class NotificationCommandService {
     private final NotificationCommandRepository notificationCommandRepository;
     private final UserCommandRepository userCommandRepository;
 
-    public void createFriendRequestNotification(Long receiverId, Long friendId) {
+    public void createFriendRequestNotification(Long receiverId, Long friendId, String requesterNickname) {
         Notification notification = Notification.create(
                 receiverId,
                 NotificationType.FRIEND_REQUEST,
                 friendId,
-                "새로운 친구 요청이 도착했습니다."
+                String.format("'%s'님으로부터 새로운 친구 요청이 도착했습니다.", requesterNickname)
         );
         notificationCommandRepository.save(notification);
     }
 
-    public void createFriendAcceptedNotification(Long requesterId, Long friendId) {
+    public void createFriendAcceptedNotification(Long requesterId, Long friendId, String receiverNickname) {
         Notification notification = Notification.create(
                 requesterId,
                 NotificationType.FRIEND_ACCEPTED,
                 friendId,
-                "친구 요청이 수락되었습니다."
+                String.format("'%s'님이 친구 요청을 수락했습니다.", receiverNickname)
+        );
+        notificationCommandRepository.save(notification);
+    }
+
+    public void createDiarySharedNotification(Long receiverId, Long diaryId, String diaryTitle, String sharerNickname) {
+        Notification notification = Notification.create(
+                receiverId,
+                NotificationType.DIARY_SHARED,
+                diaryId,
+                String.format("'%s'님이 '%s' 일기를 공유했습니다.", sharerNickname, diaryTitle)
         );
         notificationCommandRepository.save(notification);
     }

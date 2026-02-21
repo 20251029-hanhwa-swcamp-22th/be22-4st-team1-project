@@ -3,8 +3,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { diaryApi } from '@/app/api/diary.js'
 import { friendApi } from '@/app/api/friend.js'
-import { X, Image, MapPin, Plus } from 'lucide-vue-next'
-import { mockMarkers } from '@/app/data/MockData.js'
+import { X, Image, MapPin, Plus, Users } from 'lucide-vue-next'
+import { mockMarkers, mockFriends } from '@/app/data/MockData.js'
 
 const router = useRouter()
 
@@ -19,6 +19,7 @@ const mapError = ref('')
 // ── 일기 작성 모달 ──
 const showModal = ref(false)
 const selectedLocation = ref(null)
+const friends = ref([])
 const form = ref({
   title: '',
   content: '',
@@ -28,7 +29,8 @@ const form = ref({
   longitude: null,
   locationName: '',
   address: '',
-  visibility: 'PUBLIC'
+  visibility: 'PRIVATE',
+  sharedUserIds: []
 })
 const loading = ref(false)
 const error = ref('')
@@ -99,6 +101,15 @@ async function loadMarkers() {
   }
 }
 
+async function loadFriends() {
+  try {
+    const res = await friendApi.getFriends()
+    friends.value = Array.isArray(res?.data) ? res.data : mockFriends
+  } catch {
+    friends.value = mockFriends
+  }
+}
+
 function renderMarkers(list) {
   // 기존 마커 제거
   markers.forEach(m => m.setMap(null))
@@ -153,13 +164,18 @@ async function saveDiary() {
     if (form.value.locationName) fd.append('locationName', form.value.locationName)
     if (form.value.address) fd.append('address', form.value.address)
     fd.append('visitedAt', new Date().toISOString().slice(0, 19))
-    fd.append('visibility', form.value.visibility)
+    
+    // 친구 선택 시 FRIENDS_ONLY로 변경
+    const visibility = form.value.sharedUserIds.length > 0 ? 'FRIENDS_ONLY' : 'PRIVATE'
+    fd.append('visibility', visibility)
+    
+    form.value.sharedUserIds.forEach(id => fd.append('sharedUserIds', id))
     form.value.images.forEach(img => fd.append('images', img))
 
     const res = await diaryApi.createDiary(fd)
     closeModal()
     loadMarkers()
-    alert(`일기가 작성되었습니다! (ID: ${res?.data})`)
+    alert(`일기가 작성되었습니다!`)
   } catch (e) {
     error.value = e?.message || '일기 작성에 실패했습니다.'
   } finally {
@@ -169,7 +185,7 @@ async function saveDiary() {
 
 function closeModal() {
   showModal.value = false
-  form.value = { title:'',content:'',images:[],imagePreviews:[],latitude:null,longitude:null,locationName:'',address:'',visibility:'PUBLIC' }
+  form.value = { title:'',content:'',images:[],imagePreviews:[],latitude:null,longitude:null,locationName:'',address:'',visibility:'PRIVATE',sharedUserIds:[] }
   error.value = ''
 }
 
@@ -178,6 +194,7 @@ onMounted(async () => {
     await loadKakaoMap()
     initMap()
     mapReady.value = true
+    loadFriends()
   } catch (e) {
     mapError.value = e.message
   }
@@ -257,7 +274,7 @@ onUnmounted(() => {
             <span class="modal-title">📝 일기 작성</span>
             <button class="modal-close" @click="closeModal">✕</button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body" style="max-height:70vh;overflow-y:auto">
             <!-- 위치 표시 -->
             <div v-if="form.locationName" style="display:flex;align-items:center;gap:6px;margin-bottom:14px;color:var(--color-primary);font-size:13px">
               <MapPin :size="14" />
@@ -287,6 +304,22 @@ onUnmounted(() => {
                   <img :src="src" />
                   <button class="img-preview-remove" @click="removeImage(idx)">✕</button>
                 </div>
+              </div>
+            </div>
+
+            <!-- 친구 공유 선택 -->
+            <div class="form-group">
+              <label class="form-label" style="display:flex;align-items:center;gap:6px">
+                <Users :size="14" /> 친구와 공유하기
+              </label>
+              <p class="text-sm text-muted" style="margin-bottom:10px">공유할 친구를 선택하면 '친구공유'로 저장됩니다.</p>
+              <div style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;padding:8px;border:1px solid var(--color-border);border-radius:var(--radius-md)">
+                <label v-for="f in friends" :key="f.userId" style="display:flex;align-items:center;gap:10px;padding:6px;cursor:pointer">
+                  <input type="checkbox" :value="f.userId" v-model="form.sharedUserIds" />
+                  <div class="ml-avatar" style="width:24px;height:24px;font-size:10px">{{ f.nickname.charAt(0) }}</div>
+                  <span style="font-size:13px">{{ f.nickname }}</span>
+                </label>
+                <div v-if="!friends.length" class="text-center text-sm text-muted" style="padding:10px">친구가 없습니다.</div>
               </div>
             </div>
 

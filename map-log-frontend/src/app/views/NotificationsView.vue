@@ -1,65 +1,38 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { notificationApi } from '@/app/api/notification.js'
+import { useNotificationStore } from '@/app/stores/notification.js'
 import { CheckCheck, Trash2 } from 'lucide-vue-next'
-import { mockNotifications } from '@/app/data/MockData.js'
 
-const all = ref([])
-const loading = ref(true)
+const notificationStore = useNotificationStore()
 const filter = ref('ALL') // 'ALL' | 'N' | 'Y'
 
 const filtered = computed(() => {
-  if (filter.value === 'ALL') return all.value
-  if (filter.value === 'N') return all.value.filter(n => !n.read)
-  if (filter.value === 'Y') return all.value.filter(n => n.read)
-  return all.value
+  const all = notificationStore.notifications
+  if (filter.value === 'ALL') return all
+  if (filter.value === 'N') return all.filter(n => !n.read)
+  if (filter.value === 'Y') return all.filter(n => n.read)
+  return all
 })
 
 async function load() {
-  loading.value = true
-  try {
-    const res = await notificationApi.getNotifications()
-    all.value = res?.data?.content || mockNotifications
-  } catch {
-    all.value = mockNotifications
-  } finally {
-    loading.value = false
-  }
+  await notificationStore.fetchNotifications()
 }
 
 async function readOne(noti) {
-  if (noti.read === true) return
-  try {
-    await notificationApi.readOne(noti.id)
-    noti.read = true
-  } catch { /* 무시 */ }
+  if (noti.read) return
+  await notificationStore.markAsRead(noti.id)
 }
 
 async function readAll() {
-  try {
-    await notificationApi.readAll()
-    all.value = all.value.map(n => ({ ...n, read: true }))
-  } catch (e) {
-    alert(e?.message || '처리 실패')
-  }
+  await notificationStore.markAllAsRead()
 }
 
 async function deleteFiltered() {
   if (!filtered.value.length) return
   if (!confirm('현재 목록의 알림을 모두 삭제하시겠습니까?')) return
-  try {
-    const isRead = filter.value === 'ALL' ? undefined : filter.value === 'Y' ? 'Y' : 'N'
-    await notificationApi.deleteAll(isRead)
-    if (filter.value === 'ALL') {
-      all.value = []
-    } else if (filter.value === 'Y') {
-      all.value = all.value.filter(n => !n.read)
-    } else {
-      all.value = all.value.filter(n => n.read)
-    }
-  } catch (e) {
-    alert(e?.message || '삭제 실패')
-  }
+  
+  const isRead = filter.value === 'ALL' ? undefined : filter.value === 'Y' ? 'Y' : 'N'
+  await notificationStore.deleteNotifications(isRead)
 }
 
 function formatTime(dt) {
@@ -73,8 +46,6 @@ function formatTime(dt) {
   return new Date(dt).toLocaleDateString('ko-KR')
 }
 
-const unreadCount = computed(() => all.value.filter(n => !n.read).length)
-
 onMounted(load)
 </script>
 
@@ -82,11 +53,11 @@ onMounted(load)
   <div class="page">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <h1 class="page-title">알림</h1>
-      <button v-if="unreadCount > 0" class="btn btn-ghost btn-sm" @click="readAll">
+      <button v-if="notificationStore.unreadCount > 0" class="btn btn-ghost btn-sm" @click="readAll">
         <CheckCheck :size="13" /> 전체 읽음
       </button>
     </div>
-    <p class="page-subtitle">읽지 않은 알림 {{ unreadCount }}개</p>
+    <p class="page-subtitle">읽지 않은 알림 {{ notificationStore.unreadCount }}개</p>
 
     <!-- 필터 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -100,7 +71,7 @@ onMounted(load)
       </button>
     </div>
 
-    <div v-if="loading" class="loading-wrap"><div class="spinner"></div></div>
+    <div v-if="notificationStore.loading" class="loading-wrap"><div class="spinner"></div></div>
 
     <div v-else-if="!filtered.length" class="empty">
       <div class="empty-icon">🔔</div>
@@ -117,7 +88,7 @@ onMounted(load)
         @click="readOne(noti)"
       >
         <div class="noti-icon" :class="noti.type?.toLowerCase()">
-          {{ noti.type === 'FRIEND' ? '👥' : '📖' }}
+          {{ noti.type === 'FRIEND_REQUEST' || noti.type === 'FRIEND_ACCEPTED' ? '👥' : '📖' }}
         </div>
         <div style="flex:1">
           <div class="noti-title">{{ noti.message }}</div>

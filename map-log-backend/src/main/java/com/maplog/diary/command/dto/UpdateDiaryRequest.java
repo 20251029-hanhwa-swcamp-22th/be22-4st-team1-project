@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record UpdateDiaryRequest(
 
@@ -18,5 +19,7 @@ public record UpdateDiaryRequest(
         LocalDateTime visitedAt,
 
         @NotNull(message = "공개 범위는 필수입니다.")
-        Visibility visibility
+        Visibility visibility,
+
+        List<Long> sharedUserIds
 ) {}

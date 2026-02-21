@@ -30,4 +30,10 @@ public interface DiaryQueryMapper {
                                             @Param("size") int size);
 
     long countMyScraps(@Param("userId") Long userId);
+
+    List<DiarySummaryResponse> findFeedDiaries(@Param("userId") Long userId,
+                                              @Param("offset") int offset,
+                                              @Param("size") int size);
+
+    long countFeedDiaries(@Param("userId") Long userId);
 }
