@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/app/stores/auth.js'
 
 const routes = [
-    // ── 인증 불필요 ──
     {
         path: '/login',
         name: 'Login',
@@ -15,8 +14,6 @@ const routes = [
         component: () => import('@/app/views/SignUpView.vue'),
         meta: { layout: false, guest: true }
     },
-
-    // ── 인증 필요 ──
     {
         path: '/',
         redirect: '/map'
@@ -63,8 +60,6 @@ const routes = [
         component: () => import('@/app/views/AdminView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
     },
-
-    // ── fallback ──
     {
         path: '/:pathMatch(.*)*',
         redirect: '/map'
@@ -76,21 +71,25 @@ const router = createRouter({
     routes
 })
 
-// ── 네비게이션 가드 ──
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
     const auth = useAuthStore()
 
-    // 인증 필요 라우트인데 비로그인 상태
+    if (auth.isAuthenticated && (!auth.user?.userId || !auth.user?.role)) {
+        try {
+            await auth.hydrateUser()
+        } catch (_) {
+            auth.clear()
+        }
+    }
+
     if (to.meta.requiresAuth && !auth.isAuthenticated) {
         return { name: 'Login', query: { redirect: to.fullPath } }
     }
 
-    // ADMIN 전용 라우트
     if (to.meta.requiresAdmin && !auth.isAdmin) {
         return { name: 'Map' }
     }
 
-    // 이미 로그인 상태에서 로그인/회원가입 접근 시
     if (to.meta.guest && auth.isAuthenticated) {
         return { name: 'Map' }
     }
