@@ -12,4 +12,5 @@ public class DiaryMarkerResponse {
     private Double latitude;
     private Double longitude;
     private String title;
+    private String locationName;
 }

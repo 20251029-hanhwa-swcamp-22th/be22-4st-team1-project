@@ -52,7 +52,7 @@
 
     <select id="findMapMarkers"
             resultType="com.maplog.diary.query.dto.DiaryMarkerResponse">
-        SELECT id, latitude, longitude, title
+        SELECT id, latitude, longitude, title, location_name
         FROM diaries
         WHERE latitude  BETWEEN #{minLat} AND #{maxLat}
           AND longitude BETWEEN #{minLng} AND #{maxLng}
