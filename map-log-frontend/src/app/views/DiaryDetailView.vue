@@ -129,6 +129,13 @@ function formatDate(dt) {
   return new Date(dt).toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })
 }
 
+function toImageUrl(path) {
+  if (!path) return ''
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  return `${base}${path.startsWith('/') ? '' : '/'}${path}`
+}
+
 onMounted(load)
 </script>
 
@@ -163,7 +170,7 @@ onMounted(load)
 
     <!-- 이미지 갤러리 -->
     <div v-if="diary.images?.length" style="border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;position:relative;background:var(--color-bg-3)">
-      <img :src="diary.images[imgIdx]?.imageUrl" style="width:100%;max-height:360px;object-fit:cover" />
+      <img :src="toImageUrl(diary.images[imgIdx]?.imageUrl)" style="width:100%;max-height:360px;object-fit:cover" />
       <div v-if="diary.images.length > 1" style="position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px">
         <button
           v-for="(_, i) in diary.images" :key="i"
@@ -246,7 +253,7 @@ onMounted(load)
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <label v-for="img in diary.images" :key="img.imageId" style="position:relative;cursor:pointer">
                 <input type="checkbox" :value="img.imageId" v-model="editForm.deleteImageIds" style="position:absolute;top:4px;left:4px;accent-color:var(--color-danger)" />
-                <img :src="img.imageUrl" style="width:60px;height:60px;object-fit:cover;border-radius:var(--radius-sm);opacity:.8" />
+                <img :src="toImageUrl(img.imageUrl)" style="width:60px;height:60px;object-fit:cover;border-radius:var(--radius-sm);opacity:.8" />
               </label>
             </div>
           </div>
