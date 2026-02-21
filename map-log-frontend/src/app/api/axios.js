@@ -43,7 +43,14 @@ api.interceptors.response.use(
                     { refreshToken }
                 )
                 const newToken = res.data?.data?.accessToken
+                const newRefreshToken = res.data?.data?.refreshToken
+
+                if (!newToken) throw new Error('INVALID_REFRESH_RESPONSE')
+
                 localStorage.setItem('ml_access_token', newToken)
+                if (newRefreshToken) {
+                    localStorage.setItem('ml_refresh_token', newRefreshToken)
+                }
                 pendingQueue.forEach(p => p.resolve())
                 pendingQueue = []
                 original.headers.Authorization = `Bearer ${newToken}`
