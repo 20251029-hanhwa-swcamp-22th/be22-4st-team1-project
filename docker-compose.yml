@@ -1,3 +1,7 @@
+# MapLog 전체 시스템 구성을 위한 Docker Compose 설정
+# 1. MariaDB (데이터베이스)
+# 2. Spring Boot Backend (API 서버)
+# 3. Nginx Frontend (웹 서버)
 services:
   mariadb:
     image: mariadb:11
@@ -6,7 +10,7 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:-mariadb}
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:-mariadb} # .env 파일에서 로드, 기본값 mariadb
       MARIADB_DATABASE: maplog_dev
       MARIADB_CHARACTER_SET_SERVER: utf8mb4
       MARIADB_COLLATION_SERVER: utf8mb4_unicode_ci
@@ -31,26 +35,28 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/maplog_dev?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-mariadb}
-      # AWS S3 환경변수 (application-aws.yml 대신 환경변수로 주입 가능)
+      
+      # Amazon S3 설정 (보안을 위해 환경변수로 주입)
       CLOUD_AWS_S3_BUCKET: ${AMAZON_S3_BUCKET_NAME}
       CLOUD_AWS_REGION_STATIC: ${AMAZON_S3_REGION}
       CLOUD_AWS_CREDENTIALS_ACCESS_KEY: ${AMAZON_S3_ACCESS_KEY}
       CLOUD_AWS_CREDENTIALS_SECRET_KEY: ${AMAZON_S3_SECRET_KEY}
+      
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-must-be-at-least-32-characters-long}
     depends_on:
       mariadb:
-        condition: service_healthy
+        condition: service_healthy # DB가 완전히 준비된 후 서버 실행
 
   frontend:
     build:
       context: ./map-log-frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile # Nginx 멀티 스테이지 빌드 사용
     container_name: maplog-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "80:80" # 외부 80포트로 서비스
     environment:
-      VITE_API_BASE_URL: http://localhost:8080
+      VITE_API_BASE_URL: http://localhost:8080 # 브라우저에서 접근할 API 주소
     depends_on:
       - backend
 

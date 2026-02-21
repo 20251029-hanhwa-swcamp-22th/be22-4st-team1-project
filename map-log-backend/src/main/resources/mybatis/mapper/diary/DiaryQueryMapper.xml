@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 
+  일기 조회 전용 MyBatis 매퍼입니다. 
+  복잡한 검색 조건, 통계, 다중 JOIN 연산 등을 고성능으로 처리하기 위해 SQL을 직접 관리합니다.
+-->
 <mapper namespace="com.maplog.diary.query.mapper.DiaryQueryMapper">
 
     <resultMap id="DiaryDetailResultMap"
@@ -18,6 +22,7 @@
         <result property="visibility"   column="visibility"/>
         <result property="createdAt"    column="created_at"/>
         <result property="scraped"      column="scraped"/>
+        <!-- 일기에 포함된 다중 이미지를 Collection으로 매핑 (1:N) -->
         <collection property="images"
                     ofType="com.maplog.diary.query.dto.DiaryImageResponse">
             <id     property="imageId"  column="image_id"/>
@@ -25,6 +30,7 @@
         </collection>
     </resultMap>
 
+    <!-- 일기 상세 조회: 일기 기본정보 + 작성자 닉네임 + 스크랩 여부 + 이미지 목록을 한 번에 JOIN -->
     <select id="findDiaryDetail" resultMap="DiaryDetailResultMap">
         SELECT
             d.id          AS diary_id,
@@ -50,6 +56,7 @@
           AND d.deleted_at IS NULL
     </select>
 
+    <!-- 지도 마커 조회: 위도/경도 범위 내의 일기 중 '내 것' 혹은 '공유받은 것'만 필터링 -->
     <select id="findMapMarkers"
             resultType="com.maplog.diary.query.dto.DiaryMarkerResponse">
         SELECT d.id, d.latitude, d.longitude, d.title, d.location_name
@@ -64,6 +71,7 @@
           )
     </select>
 
+    <!-- 내 일기 목록 조회 (페이징 적용) -->
     <select id="findMyDiaries"
             resultType="com.maplog.diary.query.dto.DiarySummaryResponse">
         SELECT id, title, location_name, visited_at, visibility, created_at
@@ -74,33 +82,7 @@
         LIMIT #{size} OFFSET #{offset}
     </select>
 
-    <select id="countMyDiaries" resultType="long">
-        SELECT COUNT(*)
-        FROM diaries
-        WHERE user_id = #{userId}
-          AND deleted_at IS NULL
-    </select>
-
-    <select id="findMyScraps"
-            resultType="com.maplog.diary.query.dto.DiarySummaryResponse">
-        SELECT d.id, d.title, d.location_name, d.visited_at, d.visibility, d.created_at
-        FROM diaries d
-        INNER JOIN scraps s ON s.diary_id = d.id
-        WHERE s.user_id = #{userId}
-          AND d.deleted_at IS NULL
-        ORDER BY s.created_at DESC
-        LIMIT #{size} OFFSET #{offset}
-    </select>
-
-    <select id="countMyScraps" resultType="long">
-        SELECT COUNT(*)
-        FROM diaries d
-        INNER JOIN scraps s ON s.diary_id = d.id
-        WHERE s.user_id = #{userId}
-          AND d.deleted_at IS NULL
-    </select>
-
-    <!-- 피드용 쿼리: 내가 공유받은 친구의 일기만 노출 -->
+    <!-- 피드 조회: 내가 공유받은 친구의 일기만 최신순으로 조회 -->
     <select id="findFeedDiaries" resultType="com.maplog.diary.query.dto.DiarySummaryResponse">
         SELECT d.id, d.title, d.location_name, d.visited_at, d.visibility, d.created_at, u.nickname as authorNickname
         FROM diaries d
@@ -111,15 +93,6 @@
           AND d.visibility = 'FRIENDS_ONLY'
         ORDER BY d.created_at DESC
         LIMIT #{size} OFFSET #{offset}
-    </select>
-
-    <select id="countFeedDiaries" resultType="long">
-        SELECT COUNT(*)
-        FROM diaries d
-        INNER JOIN diary_shares ds ON ds.diary_id = d.id
-        WHERE ds.user_id = #{userId}
-          AND d.deleted_at IS NULL
-          AND d.visibility = 'FRIENDS_ONLY'
     </select>
 
 </mapper>
