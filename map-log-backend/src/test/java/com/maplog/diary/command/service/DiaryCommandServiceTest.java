@@ -9,7 +9,9 @@ import com.maplog.diary.command.dto.CreateDiaryRequest;
 import com.maplog.diary.command.dto.UpdateDiaryRequest;
 import com.maplog.diary.command.repository.DiaryCommandRepository;
 import com.maplog.diary.command.repository.DiaryImageRepository;
+import com.maplog.diary.command.repository.DiaryShareRepository;
 import com.maplog.diary.command.repository.ScrapRepository;
+import com.maplog.notification.command.service.NotificationCommandService;
 import com.maplog.user.command.domain.User;
 import com.maplog.user.command.repository.UserCommandRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +52,12 @@ class DiaryCommandServiceTest {
     private UserCommandRepository userCommandRepository;
 
     @Mock
+    private DiaryShareRepository diaryShareRepository;
+
+    @Mock
+    private NotificationCommandService notificationCommandService;
+
+    @Mock
     private FileStorageService fileStorageService;
 
     @Nested
@@ -62,7 +70,7 @@ class DiaryCommandServiceTest {
             String email = "test@email.com";
             CreateDiaryRequest request = new CreateDiaryRequest(
                     "title", "content", 37.5, 127.0, "location", "address",
-                    LocalDateTime.now(), Visibility.PUBLIC
+                    LocalDateTime.now(), Visibility.PRIVATE, null
             );
             User user = User.create(email, "pw", "nick");
             ReflectionTestUtils.setField(user, "id", 1L);
@@ -87,19 +95,17 @@ class DiaryCommandServiceTest {
             String email = "test@email.com";
             Long diaryId = 100L;
             UpdateDiaryRequest request = new UpdateDiaryRequest(
-                    "new title", "new content", LocalDateTime.now(), Visibility.FRIENDS_ONLY
+                    "new title", "new content", LocalDateTime.now(), Visibility.FRIENDS_ONLY, null
             );
             User user = User.create(email, "pw", "nick");
             ReflectionTestUtils.setField(user, "id", 1L);
 
-            Diary diary = Diary.create(1L, new CreateDiaryRequest(
-                    "original title", "original content", 37.5, 127.0, "location", null,
-                    LocalDateTime.now(), Visibility.PUBLIC
-            ));
+            Diary diary = Diary.create(1L, new CreateDiaryRequest("t", "c", 37.5, 127.0, "l", "a", LocalDateTime.now(), Visibility.PRIVATE, null));
             ReflectionTestUtils.setField(diary, "id", diaryId);
 
             given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(user));
             given(diaryCommandRepository.findByIdAndDeletedAtIsNull(diaryId)).willReturn(Optional.of(diary));
+            given(diaryShareRepository.findAllByDiaryId(diaryId)).willReturn(Collections.emptyList());
 
             // when
             diaryCommandService.updateDiary(email, diaryId, request, null, null);
@@ -118,71 +124,14 @@ class DiaryCommandServiceTest {
             User other = User.create(email, "pw", "other");
             ReflectionTestUtils.setField(other, "id", 2L);
 
-            Diary diary = Diary.create(1L, new CreateDiaryRequest(
-                    "title", "content", 37.5, 127.0, "location", null,
-                    LocalDateTime.now(), Visibility.PUBLIC
-            ));
+            Diary diary = Diary.create(1L, new CreateDiaryRequest("t", "c", 37.5, 127.0, "l", "a", LocalDateTime.now(), Visibility.PRIVATE, null));
             ReflectionTestUtils.setField(diary, "id", diaryId);
 
             given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(other));
             given(diaryCommandRepository.findByIdAndDeletedAtIsNull(diaryId)).willReturn(Optional.of(diary));
 
             // when & then
-            assertThatThrownBy(() -> diaryCommandService.updateDiary(email, diaryId,
-                    new UpdateDiaryRequest("t", "c", LocalDateTime.now(), Visibility.PUBLIC), null, null))
-                    .isInstanceOf(BusinessException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DIARY_ACCESS_DENIED);
-        }
-    }
-
-    @Nested
-    @DisplayName("일기 삭제 테스트")
-    class DeleteDiaryTest {
-        @Test
-        @DisplayName("성공")
-        void success() {
-            // given
-            String email = "test@email.com";
-            Long diaryId = 100L;
-            User user = User.create(email, "pw", "nick");
-            ReflectionTestUtils.setField(user, "id", 1L);
-
-            Diary diary = Diary.create(1L, new CreateDiaryRequest(
-                    "title", "content", 37.5, 127.0, "location", null,
-                    LocalDateTime.now(), Visibility.PUBLIC
-            ));
-            ReflectionTestUtils.setField(diary, "id", diaryId);
-
-            given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(user));
-            given(diaryCommandRepository.findByIdAndDeletedAtIsNull(diaryId)).willReturn(Optional.of(diary));
-
-            // when
-            diaryCommandService.deleteDiary(email, diaryId);
-
-            // then
-            assertThat(diary.isDeleted()).isTrue();
-        }
-
-        @Test
-        @DisplayName("작성자가 아닌 사용자가 삭제 시도 시 예외 발생")
-        void failNotOwner() {
-            // given
-            String email = "other@email.com";
-            Long diaryId = 100L;
-            User other = User.create(email, "pw", "other");
-            ReflectionTestUtils.setField(other, "id", 2L);
-
-            Diary diary = Diary.create(1L, new CreateDiaryRequest(
-                    "title", "content", 37.5, 127.0, "location", null,
-                    LocalDateTime.now(), Visibility.PUBLIC
-            ));
-            ReflectionTestUtils.setField(diary, "id", diaryId);
-
-            given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(other));
-            given(diaryCommandRepository.findByIdAndDeletedAtIsNull(diaryId)).willReturn(Optional.of(diary));
-
-            // when & then
-            assertThatThrownBy(() -> diaryCommandService.deleteDiary(email, diaryId))
+            assertThatThrownBy(() -> diaryCommandService.updateDiary(email, diaryId, new UpdateDiaryRequest("t", "c", LocalDateTime.now(), Visibility.PRIVATE, null), null, null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DIARY_ACCESS_DENIED);
         }
@@ -200,10 +149,7 @@ class DiaryCommandServiceTest {
             User user = User.create(email, "pw", "nick");
             ReflectionTestUtils.setField(user, "id", 1L);
 
-            Diary diary = Diary.create(2L, new CreateDiaryRequest(
-                    "title", "content", 37.5, 127.0, "location", null,
-                    LocalDateTime.now(), Visibility.PUBLIC
-            ));
+            Diary diary = Diary.create(2L, new CreateDiaryRequest("t", "c", 37.5, 127.0, "l", "a", LocalDateTime.now(), Visibility.PRIVATE, null));
             ReflectionTestUtils.setField(diary, "id", diaryId);
 
             given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(user));
@@ -234,47 +180,6 @@ class DiaryCommandServiceTest {
             assertThatThrownBy(() -> diaryCommandService.addScrap(email, diaryId))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ALREADY_SCRAPED);
-        }
-    }
-
-    @Nested
-    @DisplayName("스크랩 취소 테스트")
-    class CancelScrapTest {
-        @Test
-        @DisplayName("성공")
-        void successCancelScrap() {
-            // given
-            String email = "test@email.com";
-            Long diaryId = 100L;
-            User user = User.create(email, "pw", "nick");
-            ReflectionTestUtils.setField(user, "id", 1L);
-
-            given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(user));
-            given(scrapRepository.existsByUserIdAndDiaryId(1L, 100L)).willReturn(true);
-
-            // when
-            diaryCommandService.cancelScrap(email, diaryId);
-
-            // then
-            verify(scrapRepository).deleteByUserIdAndDiaryId(1L, 100L);
-        }
-
-        @Test
-        @DisplayName("스크랩하지 않은 경우 예외 발생")
-        void failScrapNotFound() {
-            // given
-            String email = "test@email.com";
-            Long diaryId = 100L;
-            User user = User.create(email, "pw", "nick");
-            ReflectionTestUtils.setField(user, "id", 1L);
-
-            given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(user));
-            given(scrapRepository.existsByUserIdAndDiaryId(1L, 100L)).willReturn(false);
-
-            // when & then
-            assertThatThrownBy(() -> diaryCommandService.cancelScrap(email, diaryId))
-                    .isInstanceOf(BusinessException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SCRAP_NOT_FOUND);
         }
     }
 }

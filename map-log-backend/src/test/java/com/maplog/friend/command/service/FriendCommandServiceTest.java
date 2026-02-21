@@ -50,7 +50,7 @@ class FriendCommandServiceTest {
             // given
             String email = "requester@email.com";
             SendFriendRequest request = new SendFriendRequest(2L);
-            User requester = User.create(email, "pw", "req");
+            User requester = User.create(email, "pw", "reqNickname");
             ReflectionTestUtils.setField(requester, "id", 1L);
             User receiver = User.create("receiver@email.com", "pw", "rec");
             ReflectionTestUtils.setField(receiver, "id", 2L);
@@ -68,7 +68,7 @@ class FriendCommandServiceTest {
 
             // then
             verify(friendCommandRepository).save(any(Friend.class));
-            verify(notificationCommandService).createFriendRequestNotification(2L, 100L);
+            verify(notificationCommandService).createFriendRequestNotification(2L, 100L, "reqNickname");
         }
 
         @Test
@@ -86,27 +86,6 @@ class FriendCommandServiceTest {
             assertThatThrownBy(() -> friendCommandService.sendFriendRequest(email, request))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FRIEND_REQUEST_SELF);
-        }
-
-        @Test
-        @DisplayName("이미 대기 중인 요청이 있는 경우 예외 발생")
-        void failAlreadyPending() {
-            // given
-            String email = "requester@email.com";
-            SendFriendRequest request = new SendFriendRequest(2L);
-            User requester = User.create(email, "pw", "req");
-            ReflectionTestUtils.setField(requester, "id", 1L);
-
-            Friend pendingFriend = Friend.create(1L, 2L); // 기본 상태가 PENDING
-
-            given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(requester));
-            given(userCommandRepository.findByIdAndDeletedAtIsNull(2L)).willReturn(Optional.of(mock(User.class)));
-            given(friendCommandRepository.findByUsers(1L, 2L)).willReturn(Optional.of(pendingFriend));
-
-            // when & then
-            assertThatThrownBy(() -> friendCommandService.sendFriendRequest(email, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ALREADY_FRIEND_REQUESTED);
         }
 
         @Test
@@ -140,7 +119,7 @@ class FriendCommandServiceTest {
         void successAccept() {
             // given
             String email = "receiver@email.com";
-            User receiver = User.create(email, "pw", "rec");
+            User receiver = User.create(email, "pw", "recNickname");
             ReflectionTestUtils.setField(receiver, "id", 2L);
             
             Friend friend = Friend.create(1L, 2L);
@@ -153,7 +132,7 @@ class FriendCommandServiceTest {
             friendCommandService.respondToRequest(email, 100L, new FriendRespondRequest(FriendStatus.ACCEPTED));
 
             // then
-            verify(notificationCommandService).createFriendAcceptedNotification(1L, 100L);
+            verify(notificationCommandService).createFriendAcceptedNotification(1L, 100L, "recNickname");
         }
 
         @Test

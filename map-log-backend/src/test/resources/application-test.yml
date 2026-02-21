@@ -22,6 +22,16 @@ jwt:
   access-token-expiration: 3600000
   refresh-token-expiration: 86400000
 
+cloud:
+  aws:
+    s3:
+      bucket: test-bucket
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+
 logging:
   level:
     com.maplog: DEBUG
