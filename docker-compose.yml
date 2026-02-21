@@ -6,7 +6,7 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MARIADB_ROOT_PASSWORD: mariadb
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:-mariadb}
       MARIADB_DATABASE: maplog_dev
       MARIADB_CHARACTER_SET_SERVER: utf8mb4
       MARIADB_COLLATION_SERVER: utf8mb4_unicode_ci
@@ -30,7 +30,13 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/maplog_dev?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: mariadb
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-mariadb}
+      # AWS S3 환경변수 (application-aws.yml 대신 환경변수로 주입 가능)
+      CLOUD_AWS_S3_BUCKET: ${AMAZON_S3_BUCKET_NAME}
+      CLOUD_AWS_REGION_STATIC: ${AMAZON_S3_REGION}
+      CLOUD_AWS_CREDENTIALS_ACCESS_KEY: ${AMAZON_S3_ACCESS_KEY}
+      CLOUD_AWS_CREDENTIALS_SECRET_KEY: ${AMAZON_S3_SECRET_KEY}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-must-be-at-least-32-characters-long}
     depends_on:
       mariadb:
         condition: service_healthy
@@ -42,7 +48,9 @@ services:
     container_name: maplog-frontend
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "80:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
     depends_on:
       - backend
 
