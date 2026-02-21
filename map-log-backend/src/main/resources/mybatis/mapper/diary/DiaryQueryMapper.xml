@@ -82,6 +82,32 @@
         LIMIT #{size} OFFSET #{offset}
     </select>
 
+    <select id="countMyDiaries" resultType="long">
+        SELECT COUNT(*)
+        FROM diaries
+        WHERE user_id = #{userId}
+          AND deleted_at IS NULL
+    </select>
+
+    <select id="findMyScraps"
+            resultType="com.maplog.diary.query.dto.DiarySummaryResponse">
+        SELECT d.id, d.title, d.location_name, d.visited_at, d.visibility, d.created_at
+        FROM diaries d
+        INNER JOIN scraps s ON s.diary_id = d.id
+        WHERE s.user_id = #{userId}
+          AND d.deleted_at IS NULL
+        ORDER BY s.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countMyScraps" resultType="long">
+        SELECT COUNT(*)
+        FROM diaries d
+        INNER JOIN scraps s ON s.diary_id = d.id
+        WHERE s.user_id = #{userId}
+          AND d.deleted_at IS NULL
+    </select>
+
     <!-- 피드 조회: 내가 공유받은 친구의 일기만 최신순으로 조회 -->
     <select id="findFeedDiaries" resultType="com.maplog.diary.query.dto.DiarySummaryResponse">
         SELECT d.id, d.title, d.location_name, d.visited_at, d.visibility, d.created_at, u.nickname as authorNickname
@@ -93,6 +119,15 @@
           AND d.visibility = 'FRIENDS_ONLY'
         ORDER BY d.created_at DESC
         LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countFeedDiaries" resultType="long">
+        SELECT COUNT(*)
+        FROM diaries d
+        INNER JOIN diary_shares ds ON ds.diary_id = d.id
+        WHERE ds.user_id = #{userId}
+          AND d.deleted_at IS NULL
+          AND d.visibility = 'FRIENDS_ONLY'
     </select>
 
 </mapper>

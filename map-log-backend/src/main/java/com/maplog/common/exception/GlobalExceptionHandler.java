@@ -8,6 +8,7 @@ import com.maplog.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -29,13 +30,33 @@ public class GlobalExceptionHandler {
 
     /**
      * @Valid 어노테이션을 통한 입력값 검증 실패 시 발생하는 예외를 처리합니다.
+     * 폼 데이터나 쿼리 파라미터 바인딩 실패 시 호출됩니다.
      */
     @ExceptionHandler(BindException.class)
     protected ResponseEntity<ApiResponse<Void>> handleBindException(BindException e) {
-        log.error("Validation Error: {}", e.getBindingResult().getAllErrors().get(0).getDefaultMessage());
+        String message = e.getBindingResult().getAllErrors().isEmpty() 
+                ? ErrorCode.BAD_REQUEST.getMessage() 
+                : e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        
+        log.error("BindException: {}", message);
         return ResponseEntity
                 .status(ErrorCode.BAD_REQUEST.getHttpStatus())
-                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, e.getBindingResult().getAllErrors().get(0).getDefaultMessage()));
+                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, message));
+    }
+
+    /**
+     * @RequestBody 모델 바인딩 시 @Valid 검증 실패 시 발생하는 예외를 처리합니다.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getAllErrors().isEmpty() 
+                ? ErrorCode.BAD_REQUEST.getMessage() 
+                : e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+
+        log.error("MethodArgumentNotValidException: {}", message);
+        return ResponseEntity
+                .status(ErrorCode.BAD_REQUEST.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, message));
     }
 
     /**

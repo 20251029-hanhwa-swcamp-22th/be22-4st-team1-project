@@ -175,6 +175,18 @@ public class DiaryCommandService {
         scrapRepository.save(Scrap.create(user.getId(), diary.getId()));
     }
 
+    /**
+     * 일기 스크랩을 취소합니다.
+     */
+    public void cancelScrap(String email, Long diaryId) {
+        User user = getUser(email);
+
+        if (!scrapRepository.existsByUserIdAndDiaryId(user.getId(), diaryId)) {
+            throw new BusinessException(ErrorCode.SCRAP_NOT_FOUND);
+        }
+        scrapRepository.deleteByUserIdAndDiaryId(user.getId(), diaryId);
+    }
+
     private User getUser(String email) {
         return userCommandRepository.findByEmailAndDeletedAtIsNull(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));

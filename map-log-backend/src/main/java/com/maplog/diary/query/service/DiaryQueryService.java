@@ -83,6 +83,30 @@ public class DiaryQueryService {
     }
 
     /**
+     * 내가 작성한 일기 목록을 조회합니다.
+     */
+    public Page<DiarySummaryResponse> getMyDiaries(String email, Pageable pageable) {
+        User user = getUser(email);
+        int offset = (int) pageable.getOffset();
+        int size = pageable.getPageSize();
+        List<DiarySummaryResponse> items = diaryQueryMapper.findMyDiaries(user.getId(), offset, size);
+        long total = diaryQueryMapper.countMyDiaries(user.getId());
+        return new PageImpl<>(items, pageable, total);
+    }
+
+    /**
+     * 내가 스크랩한 일기 목록을 조회합니다.
+     */
+    public Page<DiarySummaryResponse> getMyScraps(String email, Pageable pageable) {
+        User user = getUser(email);
+        int offset = (int) pageable.getOffset();
+        int size = pageable.getPageSize();
+        List<DiarySummaryResponse> items = diaryQueryMapper.findMyScraps(user.getId(), offset, size);
+        long total = diaryQueryMapper.countMyScraps(user.getId());
+        return new PageImpl<>(items, pageable, total);
+    }
+
+    /**
      * 내가 공유받은 친구들의 일기 목록(피드)을 조회합니다.
      */
     public Page<DiarySummaryResponse> getFeedDiaries(String email, Pageable pageable) {
