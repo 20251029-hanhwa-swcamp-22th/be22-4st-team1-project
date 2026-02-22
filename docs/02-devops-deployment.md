@@ -32,10 +32,20 @@ graph TD
 ## 3. ArgoCD 배포 전략 (CD)
 현재 ArgoCD의 Sync Policy는 **Manual(수동)**로 설정되어 있습니다.
 
-### 수동 동기화 선택 이유
-1. **검증 가시성:** 인프라 변경 사항(Manifest)이 클러스터에 반영되기 전, ArgoCD UI에서 Diff를 직접 확인하여 배포 안정성을 확보하기 위함입니다.
-2. **배포 시점 제어:** 자동 배포 시 발생할 수 있는 의도치 않은 서비스 중단을 방지하고, 개발자가 준비된 시점에 명시적으로 배포를 수행합니다.
-3. **학습 및 모니터링:** GitOps 흐름을 단계별로 추적하며 배포 과정의 로그와 상태를 면밀히 관찰하기 위한 전략적 선택입니다.
+### ArgoCD 대시보드 접속 방법 (Dashboard Access)
+보안상 외부로 노출되지 않은 ArgoCD 서버에 접속하기 위해 `kubectl port-forward`를 사용하여 로컬 환경과 연결합니다.
+
+1. **터미널에서 포트 포워딩 실행:**
+   ```powershell
+   kubectl port-forward svc/argocd-server -n argocd 8888:443
+   ```
+   *   해당 명령어는 터미널을 열어둔 상태로 유지해야 연결이 지속됩니다.
+2. **브라우저 접속:**
+   - 주소창에 `https://localhost:8888` 입력.
+   - 보안 경고 발생 시 '고급' -> 'localhost(안전하지 않음)로 이동' 클릭.
+3. **로그인 정보:**
+   - **ID:** `admin`
+   - **Password:** 설치 시 생성된 초기 비밀번호 (보통 `argocd-initial-admin-secret`에서 확인 가능).
 
 ## 4. 네트워크 및 도메인 배포 (ngrok)
 로컬 K8s 환경의 외부 노출 한계를 극복하기 위해 **ngrok**을 활용합니다.
