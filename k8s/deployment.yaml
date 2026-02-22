@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: map-log
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:11
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: map-log-secrets
+              key: DB_PASSWORD
+        - name: MARIADB_DATABASE
+          value: "maplog_dev"
+        - name: MARIADB_CHARACTER_SET_SERVER
+          value: "utf8mb4"
+        - name: MARIADB_COLLATION_SERVER
+          value: "utf8mb4_unicode_ci"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: map-log-backend
+  namespace: map-log
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: map-log-backend
+  template:
+    metadata:
+      labels:
+        app: map-log-backend
+    spec:
+      containers:
+      - name: map-log-backend
+        image: gusgh07/map-log-backend:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "dev"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mariadb://mariadb:3306/maplog_dev?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "root"
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: map-log-secrets
+              key: DB_PASSWORD
+        - name: CLOUD_AWS_S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: map-log-secrets
+              key: AMAZON_S3_BUCKET_NAME
+        - name: CLOUD_AWS_REGION_STATIC
+          valueFrom:
+            secretKeyRef:
+              name: map-log-secrets
+              key: AMAZON_S3_REGION
+        - name: CLOUD_AWS_CREDENTIALS_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: map-log-secrets
+              key: AMAZON_S3_ACCESS_KEY
+        - name: CLOUD_AWS_CREDENTIALS_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: map-log-secrets
+              key: AMAZON_S3_SECRET_KEY
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: map-log-secrets
+              key: JWT_SECRET
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: map-log-frontend
+  namespace: map-log
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: map-log-frontend
+  template:
+    metadata:
+      labels:
+        app: map-log-frontend
+    spec:
+      containers:
+      - name: map-log-frontend
+        image: gusgh07/map-log-frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: VITE_API_BASE_URL
+          value: "http://map-log-backend:8080"
