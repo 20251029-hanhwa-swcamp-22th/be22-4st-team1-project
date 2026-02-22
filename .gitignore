@@ -1,16 +1,6 @@
-# Environment Variables
-.env
-.env.local
-.env.*.local
-*.env
-!.env.example
-
 # Secrets & Configs (Recursive)
 **/application-prod.yml
-**/application-aws.yml
-**/application-secret.yml
 **/secret.yaml
-k8s/secret.yaml
 
 # Build Artifacts
 **/build/

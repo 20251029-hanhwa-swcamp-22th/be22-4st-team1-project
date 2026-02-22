@@ -39,4 +39,3 @@ out/
 
 # Secret
 src/main/resources/application-prod.yml
-src/main/resources/application-aws.yml
