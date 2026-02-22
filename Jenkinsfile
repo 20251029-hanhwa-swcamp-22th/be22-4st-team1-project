@@ -23,6 +23,15 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                // 'github' 자격 증명과 소스 레포지토리 주소를 명시적으로 사용하여 체크아웃합니다.
+                git credentialsId: 'github',
+                    url: "${env.SOURCE_REPO_URL}",
+                    branch: 'main'
+            }
+        }
+
         stage('Preparation') {
             steps {
                 script {
