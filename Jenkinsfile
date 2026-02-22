@@ -64,13 +64,16 @@ pipeline {
         stage('Frontend Source Build') {
             steps {
                 script {
-                    dir('map-log-frontend') {
-                        if (isUnix()) {
-                            sh "npm install"
-                            sh "npm run build"
-                        } else {
-                            bat "npm install"
-                            bat "npm run build"
+                    // Jenkins Credentials에서 KAKAO_MAP_KEY를 가져와 빌드 시 주입
+                    withCredentials([string(credentialsId: 'KAKAO_MAP_KEY', variable: 'KAKAO_KEY')]) {
+                        dir('map-log-frontend') {
+                            if (isUnix()) {
+                                sh "npm install"
+                                sh "VITE_API_BASE_URL=/api VITE_KAKAO_MAP_KEY=${KAKAO_KEY} npm run build"
+                            } else {
+                                bat "npm install"
+                                bat "set VITE_API_BASE_URL=/api && set VITE_KAKAO_MAP_KEY=${KAKAO_KEY} && npm run build"
+                            }
                         }
                     }
                 }
