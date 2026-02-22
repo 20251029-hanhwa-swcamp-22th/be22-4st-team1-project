@@ -22,6 +22,35 @@ graph LR
 ## 2. 파일 저장 전략 (AWS S3)
 이미지 첨부 기능을 위해 AWS S3 인프라를 활용하며, 보안을 위해 **Presigned URL** 방식을 채택했습니다.
 
+### 프로필 기반 자동 환경 구분 및 저장소 선택
+Spring Boot의 **`@Profile`** 기능을 활용하여, 서버 실행 환경에 따라 적절한 저장소 구현체(`FileStorageService`)를 자동으로 선택합니다.
+
+```mermaid
+graph TD
+    Start[애플리케이션 시작] --> CheckEnv{프로필 확인}
+    CheckEnv -- "active=dev" --> Local[LocalFileStorageService 생성]
+    CheckEnv -- "active=aws" --> S3[S3FileStorageService 생성]
+    
+    Local --> Run[로컬 DB & uploads/ 폴더 사용]
+    S3 --> AWS[S3 버킷 & AWS 인프라 사용]
+```
+
+- **로컬 환경 (`dev`):** `@Profile("dev")` 설정에 의해 `LocalFileStorageService`가 활성화되며, 별도의 AWS 설정 없이 로컬 파일 시스템(`uploads/`)을 저장소로 사용합니다.
+- **AWS/K8s 환경 (`aws`):** `@Profile("aws")` 설정에 의해 `S3FileStorageService`가 활성화됩니다. K8s의 `SPRING_PROFILES_ACTIVE` 환경 변수를 통해 인프라 환경을 자동으로 감지합니다.
+- **장점:** 환경별 코드 수정 없이 동일한 인터페이스로 로컬 개발과 클라우드 배포를 동시에 지원하며, 로컬 환경에서 불필요한 AWS 빈 생성으로 인한 의존성 오류를 원천 차단합니다.
+
+### 프로파일 활성화 방법 (Profile Activation)
+애플리케이션이 실행될 때 특정 프로파일을 활성화하는 방법은 다음과 같으며, 아래로 갈수록 우선순위가 높습니다.
+
+1. **`application.yml` 설정 (기본값):**
+   - 파일 내부의 `spring.profiles.active` 속성을 통해 기본 프로파일을 지정합니다. (현재 프로젝트는 `dev`가 기본값)
+2. **Kubernetes 환경 변수 (배포 환경):**
+   - `deployment.yaml`의 `env` 설정에서 `SPRING_PROFILES_ACTIVE` 값을 주입합니다.
+   - 예: `value: "aws"` 또는 `value: "dev,aws"` (여러 프로파일 동시 활성화 가능)
+3. **IDE 설정 및 CLI 옵션 (로컬 테스트):**
+   - **IntelliJ:** `Run/Debug Configurations` -> `Active profiles` 칸에 프로파일 명 입력.
+   - **CLI:** 실행 시 `-Dspring.profiles.active=aws` 옵션 추가.
+
 ### Presigned URL 워크플로우
 1. **업로드:** 클라이언트가 파일을 전송하면 서버가 S3에 저장합니다.
 2. **조회 요청:** 클라이언트가 이미지 URL을 요청합니다.
