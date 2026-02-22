@@ -120,7 +120,7 @@ pipeline {
             steps {
                 // 신규 발급받은 'github' 자격 증명(PAT)을 사용하여 HTTPS 주소로 클론합니다.
                 git credentialsId: 'github',
-                    url: "https://github.com/gusgh075/k8s-manifests.git",
+                    url: "${env.MANIFEST_REPO_URL}",
                     branch: 'main'
                 
                 script { 

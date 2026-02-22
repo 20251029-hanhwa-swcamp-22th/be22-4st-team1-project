@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 @Service
+@org.springframework.context.annotation.Profile("dev")
 public class LocalFileStorageService implements FileStorageService {
 
     @Value("${app.upload-dir:uploads}")
