@@ -22,7 +22,8 @@ pipeline {
                     }
 
                     def shortHash = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${shortHash}"
+                    def buildNumber = env.BUILD_NUMBER ?: "${currentBuild.number}"
+                    env.IMAGE_TAG = "${buildNumber}-${shortHash}"
                     echo "Image tag: ${env.IMAGE_TAG}"
                 }
             }
@@ -54,7 +55,7 @@ pipeline {
                     steps {
                         dir('map-log-frontend') {
                             sh 'npm ci'
-                            sh 'npm test'
+                            sh 'unset NODE_OPTIONS && npm test'
                         }
                     }
                 }
