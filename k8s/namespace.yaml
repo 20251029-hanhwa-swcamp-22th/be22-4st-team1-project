@@ -1,0 +1,7 @@
+# maplog 관련 리소스를 논리적으로 분리할 네임스페이스입니다.
+apiVersion: v1
+kind: Namespace
+metadata:
+  # 모든 앱/인프라 리소스가 이 네임스페이스에 생성됩니다.
+  # TODO: 조직 표준 네이밍 규칙이 있으면 네임스페이스명을 변경하세요.
+  name: maplog

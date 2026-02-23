@@ -1,0 +1,21 @@
+# 클러스터 내부에서 MariaDB에 접근하기 위한 Service입니다.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: maplog
+  annotations:
+    # DB Pod 생성과 같은 단계에서 적용됩니다.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  # maplog-mariadb 라벨을 가진 Pod로 트래픽을 전달합니다.
+  selector:
+    app: maplog-mariadb
+  ports:
+    - name: mysql
+      # 서비스 포트(클러스터 내부 접근 포트)입니다.
+      port: 3306
+      # 컨테이너 포트로 전달합니다.
+      targetPort: 3306
+  # 외부 노출 없이 내부 통신 전용입니다.
+  type: ClusterIP

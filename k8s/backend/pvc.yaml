@@ -1,0 +1,20 @@
+# 백엔드 업로드 파일(/app/uploads) 영속 저장소 요청입니다.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: maplog-backend-uploads-pvc
+  namespace: maplog
+  annotations:
+    # Deployment가 볼륨을 마운트하기 전에 PVC를 먼저 생성합니다.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  # TODO: 기본 StorageClass가 없는 클러스터라면 storageClassName을 명시하세요.
+  # storageClassName: gp3
+  # 단일 노드에서 읽기/쓰기 가능한 볼륨 모드입니다.
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # 필요 디스크 용량 요청값입니다.
+      # TODO: 트래픽/저장 정책에 맞게 용량을 조정하세요.
+      storage: 5Gi

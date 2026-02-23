@@ -1,0 +1,63 @@
+# Nginx 기반 프론트엔드 정적 파일 서버 Deployment입니다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maplog-frontend
+  namespace: maplog
+  annotations:
+    # 백엔드와 같은 애플리케이션 단계에서 배포합니다.
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app: maplog-frontend
+spec:
+  # 프론트 Pod를 2개 운영해 가용성을 확보합니다.
+  replicas: 2
+  # 롤백을 위한 이전 ReplicaSet 보관 개수입니다.
+  revisionHistoryLimit: 2
+  # 무중단 프론트 배포 전략입니다.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: maplog-frontend
+  template:
+    metadata:
+      labels:
+        app: maplog-frontend
+    spec:
+      containers:
+        - name: frontend
+          # 실제 태그는 kustomization.yaml의 images.newTag로 주입됩니다.
+          image: docker.io/wjdqudwlsdev/maplog-frontend
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          # 정적 파일 서빙 준비 여부 확인입니다.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            # 스케줄링 최소 리소스 요청값입니다.
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            # 컨테이너 최대 리소스 제한값입니다.
+            limits:
+              cpu: 300m
+              memory: 256Mi

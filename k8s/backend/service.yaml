@@ -1,0 +1,21 @@
+# 백엔드 Pod 집합에 대한 내부 네트워크 엔드포인트입니다.
+apiVersion: v1
+kind: Service
+metadata:
+  name: maplog-backend
+  namespace: maplog
+  annotations:
+    # 애플리케이션 배포 단계와 동일한 순서로 적용합니다.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  # maplog-backend 라벨의 Pod에 로드밸런싱합니다.
+  selector:
+    app: maplog-backend
+  ports:
+    - name: http
+      # 클러스터 내부 서비스 포트입니다.
+      port: 8080
+      # 실제 컨테이너 포트입니다.
+      targetPort: 8080
+  # Ingress가 접근하는 내부 전용 서비스 타입입니다.
+  type: ClusterIP

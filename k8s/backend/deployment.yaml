@@ -1,0 +1,79 @@
+# Spring Boot 백엔드 애플리케이션 Pod를 관리하는 Deployment입니다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maplog-backend
+  namespace: maplog
+  annotations:
+    # Secret/PVC 이후, Ingress 이전 단계로 배포합니다.
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app: maplog-backend
+spec:
+  # 백엔드 Pod를 2개로 운영해 가용성을 확보합니다.
+  replicas: 2
+  # 롤백을 위한 이전 ReplicaSet 보관 개수입니다.
+  revisionHistoryLimit: 2
+  # 무중단 배포를 위한 롤링 업데이트 전략입니다.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: maplog-backend
+  template:
+    metadata:
+      labels:
+        app: maplog-backend
+    spec:
+      containers:
+        - name: backend
+          # 실제 태그는 kustomization.yaml의 images.newTag로 주입됩니다.
+          image: docker.io/wjdqudwlsdev/maplog-backend
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            # dev/prod 같은 스프링 실행 프로필입니다.
+            # TODO: 운영 배포 시 보통 prod로 변경합니다.
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+          envFrom:
+            # DB/JWT/S3 값을 Secret에서 한 번에 주입합니다.
+            - secretRef:
+                name: maplog-backend-secret
+          # 업로드 파일 경로를 PVC 볼륨에 연결합니다.
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+          # 앱 준비 완료 여부를 확인해 서비스 트래픽 유입 시점을 제어합니다.
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            # 스케줄링 기준이 되는 최소 리소스 요청값입니다.
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            # 컨테이너가 사용할 수 있는 최대 리소스 제한값입니다.
+            limits:
+              cpu: 500m
+              memory: 1Gi
+      # 업로드 파일 저장용 볼륨을 컨테이너에 제공합니다.
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: maplog-backend-uploads-pvc

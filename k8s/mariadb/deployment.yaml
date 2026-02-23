@@ -1,0 +1,76 @@
+# MariaDB 데이터베이스 Pod를 실행하는 Deployment입니다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maplog-mariadb
+  namespace: maplog
+  annotations:
+    # Secret/PVC가 먼저 준비된 뒤 DB를 띄우기 위한 순서 설정입니다.
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    app: maplog-mariadb
+spec:
+  # 단일 인스턴스 DB 구성입니다.
+  replicas: 1
+  # DB 특성상 롤링보다 재생성 전략을 사용합니다.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: maplog-mariadb
+  template:
+    metadata:
+      labels:
+        app: maplog-mariadb
+    spec:
+      containers:
+        - name: mariadb
+          # 운영 시 고정 버전 태그 사용을 권장합니다.
+          image: mariadb:11
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: maplog-mariadb-secret
+                  key: MARIADB_ROOT_PASSWORD
+            - name: MARIADB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: maplog-mariadb-secret
+                  key: MARIADB_DATABASE
+            - name: MARIADB_CHARACTER_SET_SERVER
+              value: utf8mb4
+            - name: MARIADB_COLLATION_SERVER
+              value: utf8mb4_unicode_ci
+          volumeMounts:
+            # DB 데이터 디렉터리를 PVC에 연결합니다.
+            - name: mariadb-data
+              mountPath: /var/lib/mysql
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "healthcheck.sh --connect --innodb_initialized"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "healthcheck.sh --connect"]
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        # 위에서 선언한 PVC를 실제 볼륨으로 연결합니다.
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: maplog-mariadb-pvc

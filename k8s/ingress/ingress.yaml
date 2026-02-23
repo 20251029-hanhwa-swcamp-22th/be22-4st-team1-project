@@ -1,0 +1,45 @@
+# 외부 HTTP 요청을 백엔드/프론트 서비스로 라우팅하는 진입점입니다.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: maplog-ingress
+  namespace: maplog
+  annotations:
+    # 서비스 배포가 완료된 뒤 마지막 단계에서 Ingress를 적용합니다.
+    argocd.argoproj.io/sync-wave: "1"
+    # 업로드 요청 크기 제한을 20MB로 확장합니다.
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+spec:
+  # 클러스터에 설치된 nginx ingress controller를 사용합니다.
+  # TODO: 클러스터 ingressClass가 다르면 값(예: alb, traefik)으로 변경하세요.
+  ingressClassName: nginx
+  rules:
+    # 실제 운영 도메인으로 교체해야 합니다.
+    # TODO: 운영 도메인(FQDN)으로 변경하세요.
+    - host: maplog.local
+      http:
+        paths:
+          # API 경로는 백엔드 서비스로 전달합니다.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: maplog-backend
+                port:
+                  number: 8080
+          # 업로드 파일 경로도 백엔드 서비스로 전달합니다.
+          - path: /uploads
+            pathType: Prefix
+            backend:
+              service:
+                name: maplog-backend
+                port:
+                  number: 8080
+          # 그 외 모든 경로는 프론트엔드 서비스로 전달합니다.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: maplog-frontend
+                port:
+                  number: 80
