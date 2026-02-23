@@ -5,10 +5,12 @@
 
     <select id="findNotifications"
             resultType="com.maplog.notification.query.dto.NotificationResponse">
-        SELECT id, type, reference_id, message, is_read AS `read`, created_at
+        <!-- 알림 500 에러 수정을 위해 실제 DB 컬럼인 is_read를 조회하고 Java 객체 필드명인 read로 변환합니다. -->
+        SELECT id, type, reference_id, message, is_read AS "read", created_at
         FROM notifications
         WHERE user_id = #{userId}
         <if test="readFilter != null">
+            <!-- 조건절 검색 시에도 DTO 필드명이 아닌 실제 데이터베이스 컬럼명인 is_read를 통해 필터링합니다. -->
             AND is_read = #{readFilter}
         </if>
         ORDER BY created_at DESC
