@@ -35,12 +35,14 @@ public class DiaryCommandController {
             @RequestParam String locationName,
             @RequestParam(required = false) String address,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime visitedAt,
-            @RequestParam(required = false, defaultValue = "PUBLIC") Visibility visibility,
+            @RequestParam(required = false, defaultValue = "PRIVATE") Visibility visibility,
+            @RequestParam(required = false) List<Long> sharedUserIds,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
         CreateDiaryRequest request = new CreateDiaryRequest(
                 title, content, latitude, longitude, locationName, address,
                 visitedAt != null ? visitedAt : LocalDateTime.now(),
-                visibility
+                visibility,
+                sharedUserIds
         );
         Long diaryId = diaryCommandService.createDiary(userDetails.getUsername(), request, images);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -54,13 +56,15 @@ public class DiaryCommandController {
             @RequestParam String title,
             @RequestParam String content,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime visitedAt,
-            @RequestParam(required = false, defaultValue = "PUBLIC") Visibility visibility,
+            @RequestParam(required = false, defaultValue = "PRIVATE") Visibility visibility,
+            @RequestParam(required = false) List<Long> sharedUserIds,
             @RequestParam(required = false) List<Long> deleteImageIds,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
         UpdateDiaryRequest request = new UpdateDiaryRequest(
                 title, content,
                 visitedAt != null ? visitedAt : LocalDateTime.now(),
-                visibility
+                visibility,
+                sharedUserIds
         );
         diaryCommandService.updateDiary(userDetails.getUsername(), diaryId, request, deleteImageIds, images);
         return ResponseEntity.ok(ApiResponse.success("일기가 수정되었습니다.", null));

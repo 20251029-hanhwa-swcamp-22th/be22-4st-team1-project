@@ -16,4 +16,5 @@ public class DiarySummaryResponse {
     private LocalDateTime visitedAt;
     private String visibility;
     private LocalDateTime createdAt;
+    private String authorNickname;
 }

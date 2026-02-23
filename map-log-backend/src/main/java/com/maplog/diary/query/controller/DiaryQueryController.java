@@ -3,8 +3,12 @@ package com.maplog.diary.query.controller;
 import com.maplog.common.response.ApiResponse;
 import com.maplog.diary.query.dto.DiaryDetailResponse;
 import com.maplog.diary.query.dto.DiaryMarkerResponse;
+import com.maplog.diary.query.dto.DiarySummaryResponse;
 import com.maplog.diary.query.service.DiaryQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,5 +41,13 @@ public class DiaryQueryController {
         List<DiaryMarkerResponse> markers = diaryQueryService.getMapMarkers(
                 userDetails.getUsername(), swLat, neLat, swLng, neLng);
         return ResponseEntity.ok(ApiResponse.success(markers));
+    }
+
+    @GetMapping("/feed")
+    public ResponseEntity<ApiResponse<Page<DiarySummaryResponse>>> getFeedDiaries(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<DiarySummaryResponse> response = diaryQueryService.getFeedDiaries(userDetails.getUsername(), pageable);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

@@ -40,7 +40,7 @@ public class FriendCommandService {
                 });
 
         Friend friend = friendCommandRepository.save(Friend.create(requester.getId(), request.receiverId()));
-        notificationCommandService.createFriendRequestNotification(request.receiverId(), friend.getId());
+        notificationCommandService.createFriendRequestNotification(request.receiverId(), friend.getId(), requester.getNickname());
     }
 
     public void respondToRequest(String email, Long friendId, FriendRespondRequest request) {
@@ -58,7 +58,7 @@ public class FriendCommandService {
 
         if (request.status() == FriendStatus.ACCEPTED) {
             friend.accept();
-            notificationCommandService.createFriendAcceptedNotification(friend.getRequesterId(), friend.getId());
+            notificationCommandService.createFriendAcceptedNotification(friend.getRequesterId(), friend.getId(), receiver.getNickname());
         } else if (request.status() == FriendStatus.REJECTED) {
             friend.reject();
         } else {

@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+mybatis:
+  config-location: classpath:mybatis/mybatis-config.xml
+  mapper-locations: classpath:mybatis/mapper/**/*.xml
+
+jwt:
+  secret: v9y$B&E)H@McQfTjWnZr4u7x!A%C*F-JaNdRgUkXp2s5v8y/B?E(G+KbPeShVmYq
+  access-token-expiration: 3600000
+  refresh-token-expiration: 86400000
+
+cloud:
+  aws:
+    s3:
+      bucket: test-bucket
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+
+logging:
+  level:
+    com.maplog: DEBUG

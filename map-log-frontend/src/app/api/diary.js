@@ -30,14 +30,9 @@ export const diaryApi = {
         return api.get('/api/diaries/map', { params: { swLat, swLng, neLat, neLng } })
     },
 
-    /** 일기 공유 설정 - POST /api/diaries/:diaryId/share */
-    shareDiary(diaryId, { friendIds }) {
-        return api.post(`/api/diaries/${diaryId}/share`, { friendIds })
-    },
-
-    /** 일기 공유 해제 - DELETE /api/diaries/:diaryId/share/:userId */
-    unshareDiary(diaryId, userId) {
-        return api.delete(`/api/diaries/${diaryId}/share/${userId}`)
+    /** 피드 조회 - GET /api/diaries/feed */
+    getFeed({ page, size }) {
+        return api.get('/api/diaries/feed', { params: { page, size } })
     },
 
     /** 스크랩 추가 - POST /api/scraps */
