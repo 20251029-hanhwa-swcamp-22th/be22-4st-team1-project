@@ -4,7 +4,7 @@ pipeline {
     // 전역 도구 설정: Jenkins 관리 > Global Tool Configuration에 등록된 이름과 일치해야 합니다.
     tools {
         gradle 'gradle'
-        jdk 'jdk-21'
+        jdk 'openJDK21'
     }
 
     // 파이프라인에서 사용할 환경 변수 정의

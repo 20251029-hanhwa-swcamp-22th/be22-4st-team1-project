@@ -29,7 +29,28 @@ graph TD
 4. **Push:** Docker Hub(`gusgh07`)로 이미지 업로드.
 5. **Update Manifest:** `k8s-manifests` 레포지토리의 `deployment.yaml` 내 이미지 태그를 최신화.
 
-## 3. ArgoCD 배포 전략 (CD)
+## 3. Jenkins 환경 설정 가이드 (Configuration Guide)
+Jenkins 파이프라인이 정상적으로 작동하기 위해 필요한 **Credentials**와 **Tools** 설정입니다.
+
+### 3.1. Credentials 설정 (Manage Credentials)
+Jenkins 관리 > Manage Credentials에서 다음 ID로 자격 증명을 등록해야 합니다.
+
+| Credential ID | 종류 (Kind) | 설명 |
+| :--- | :--- | :--- |
+| `github` | Username with password | GitHub 소스 및 매니페스트 레포지토리 접근 권한 (PAT 사용 권장) |
+| `DOCKERHUB_PASSWORD` | Username with password | Docker Hub 이미지 푸시를 위한 계정 정보 |
+| `KAKAO_MAP_KEY` | Secret text | 프론트엔드 빌드 시 주입할 카카오 맵 API 키 |
+| `discord` | Secret text | 빌드 결과 알림을 위한 Discord Webhook URL |
+
+### 3.2. Global Tool Configuration 설정
+Jenkins 관리 > Global Tool Configuration에서 다음 도구들의 이름을 `Jenkinsfile` 정의와 일치시켜야 합니다.
+
+- **JDK (jdk-21):** Java 21 버전을 설치하고 이름을 `openJDK21`로 설정합니다.
+- **Gradle (gradle):** 최신 Gradle 버전을 설치하고 이름을 `gradle`로 설정합니다.
+- **NodeJS:** 프론트엔드 빌드를 위해 Node.js 20 이상의 버전을 설치합니다. (서버 환경에 사전 설치되거나 Jenkins 플러그인으로 관리)
+- **Docker:** Docker 빌드가 가능한 환경이어야 하며, Jenkins 사용자가 Docker 그룹에 포함되어야 합니다.
+
+## 4. ArgoCD 배포 전략 (CD)
 현재 ArgoCD의 Sync Policy는 **Manual(수동)**로 설정되어 있습니다.
 
 ### ArgoCD 대시보드 접속 방법 (Dashboard Access)
@@ -47,12 +68,12 @@ graph TD
    - **ID:** `admin`
    - **Password:** 설치 시 생성된 초기 비밀번호 (보통 `argocd-initial-admin-secret`에서 확인 가능).
 
-## 4. 네트워크 및 도메인 배포 (ngrok)
+## 5. 네트워크 및 도메인 배포 (ngrok)
 로컬 K8s 환경의 외부 노출 한계를 극복하기 위해 **ngrok**을 활용합니다.
 - **Webhook 수신:** GitHub의 Push 이벤트를 Jenkins가 받을 수 있도록 ngrok 터널을 통해 Jenkins 포트를 외부에 노출합니다.
 - **서비스 배포:** 현재는 Ingress를 통해 80포트로 서비스를 노출하며, 필요 시 ngrok을 통해 해당 도메인을 퍼블릭 URL로 연동하여 외부에서 접근 가능하게 구성합니다.
 
-## 5. 웹 배포 절차 (Web Deployment)
+## 6. 웹 배포 절차 (Web Deployment)
 프로젝트를 실제 웹에 배포하는 표준 절차는 다음과 같습니다.
 1. **Ingress 설정:** `ingress.yaml`을 통해 서비스 도메인과 경로를 정의합니다.
 2. **ngrok 터널링:**
