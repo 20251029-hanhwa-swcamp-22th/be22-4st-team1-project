@@ -76,21 +76,16 @@ pipeline {
                         passwordVariable: 'DOCKERHUB_PASSWORD'
                     )
                 ]) {
-                    sh 'echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin'
-
-                    // Backend (multi-stage Dockerfile: Gradle 빌드 포함)
-                    sh """
-                        docker build -t \${DOCKERHUB_USERNAME}/maplog-backend:\${IMAGE_TAG} ./map-log-backend
-                        docker push \${DOCKERHUB_USERNAME}/maplog-backend:\${IMAGE_TAG}
-                        docker rmi \${DOCKERHUB_USERNAME}/maplog-backend:\${IMAGE_TAG}
-                    """
-
-                    // Frontend (multi-stage Dockerfile: npm build + nginx)
-                    sh """
-                        docker build -t \${DOCKERHUB_USERNAME}/maplog-frontend:\${IMAGE_TAG} ./map-log-frontend
-                        docker push \${DOCKERHUB_USERNAME}/maplog-frontend:\${IMAGE_TAG}
-                        docker rmi \${DOCKERHUB_USERNAME}/maplog-frontend:\${IMAGE_TAG}
-                    """
+                    script {
+                        def tag = env.IMAGE_TAG
+                        sh "echo '${DOCKERHUB_PASSWORD}' | docker login -u '${DOCKERHUB_USERNAME}' --password-stdin"
+                        sh "docker build -t ${DOCKERHUB_USERNAME}/maplog-backend:${tag} ./map-log-backend"
+                        sh "docker push ${DOCKERHUB_USERNAME}/maplog-backend:${tag}"
+                        sh "docker rmi ${DOCKERHUB_USERNAME}/maplog-backend:${tag}"
+                        sh "docker build -t ${DOCKERHUB_USERNAME}/maplog-frontend:${tag} ./map-log-frontend"
+                        sh "docker push ${DOCKERHUB_USERNAME}/maplog-frontend:${tag}"
+                        sh "docker rmi ${DOCKERHUB_USERNAME}/maplog-frontend:${tag}"
+                    }
                 }
             }
         }
