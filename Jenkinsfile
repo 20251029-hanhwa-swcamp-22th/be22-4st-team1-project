@@ -1,25 +1,31 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_TAG = ''
-    }
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-                script {
-                    def commitMsg = sh(returnStdout: true, script: 'git log -1 --pretty=%B').trim()
-                    if (commitMsg.contains('[skip ci]')) {
-                        currentBuild.result = 'NOT_BUILT'
-                        error('Manifest update commit detected. Skipping pipeline.')
-                    }
-                    def shortHash = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${shortHash}"
-                    echo "Image tag: ${env.IMAGE_TAG}"
+//     environment {
+//         IMAGE_TAG = ''
+//     }
+    stage('Checkout') {
+        steps {
+            checkout scm
+            script {
+                def commitMsg = sh(returnStdout: true, script: 'git log -1 --pretty=%B').trim()
+                if (commitMsg.contains('[skip ci]')) {
+                    currentBuild.result = 'NOT_BUILT'
+                    error('Manifest update commit detected. Skipping pipeline.')
                 }
+
+                def shortHash = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+
+                // BUILD_NUMBER 확인
+                echo "BUILD_NUMBER from env: ${env.BUILD_NUMBER}"
+                echo "BUILD_NUMBER from currentBuild: ${currentBuild.number}"
+
+                def buildNum = currentBuild.number.toString()  // ← env 대신 currentBuild 사용
+                env.IMAGE_TAG = "${buildNum}-${shortHash}"
+                echo "Image tag: ${env.IMAGE_TAG}"
             }
         }
+    }
 
         stage('Test') {
             parallel {
