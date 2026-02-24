@@ -1,0 +1,1 @@
+fix : SecurityConfig CORS AllowedOriginPatterns 사용으로 ngrok 403 해결

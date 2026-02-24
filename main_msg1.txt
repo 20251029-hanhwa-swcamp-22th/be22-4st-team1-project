@@ -1,0 +1,1 @@
+feat : SecurityConfig CORS AllowedOrigins ngrok URL 추가
