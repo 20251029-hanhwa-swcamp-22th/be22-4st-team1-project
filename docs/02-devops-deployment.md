@@ -85,6 +85,19 @@ ArgoCD 웹 UI에서 새로운 앱을 추가하는 상세 설정 값입니다.
    - **Namespace**: `default`
 5. 설정 완료 후 **"CREATE"** 버튼을 눌러 생성하고, 생성된 앱 카드에서 **"SYNC"**를 클릭하여 배포를 완료합니다.
 
+### 4.3. Private 레포지토리 연동 (Private Repository Connection)
+`k8s-manifests` 레포지토리가 Private인 경우, ArgoCD가 접근할 수 있도록 GitHub Personal Access Token(PAT)을 등록해야 합니다.
+
+1. **GitHub PAT 발급**: GitHub Settings > Developer settings > Personal access tokens (Tokens classic)에서 `repo` 권한을 가진 토큰을 생성합니다.
+2. **ArgoCD 레포지토리 등록**:
+   - ArgoCD 메뉴 > **Settings** > **Repositories** 클릭.
+   - **"+ CONNECT REPO"** 버튼 클릭.
+   - **Choose connection method**: `VIA HTTPS` 선택.
+   - **Repository URL**: `https://github.com/gusgh075/k8s-manifests.git`
+   - **Username**: GitHub 계정 ID 입력.
+   - **Password**: 발급받은 **PAT(토큰값)** 입력.
+3. **연결 확인**: Status가 `Successful`로 표시되는지 확인합니다.
+
 ## 5. 네트워크 및 도메인 배포 (ngrok)
 로컬 K8s 환경의 외부 노출 한계를 극복하기 위해 **ngrok**을 활용합니다.
 - **Webhook 수신:** GitHub의 Push 이벤트를 Jenkins가 받을 수 있도록 ngrok 터널을 통해 Jenkins 포트를 외부에 노출합니다.
