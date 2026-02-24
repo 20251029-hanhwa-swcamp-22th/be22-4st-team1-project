@@ -21,8 +21,8 @@ pipeline {
                     }
 
                     def shortHash = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    def buildNumber = env.BUILD_NUMBER ?: "${currentBuild.number}"
-                    env.IMAGE_TAG = "${buildNumber}-${shortHash}"
+//                     def buildNumber = env.BUILD_NUMBER ?: "${currentBuild.number}"
+                    env.IMAGE_TAG = "${env.buildNumber}-${shortHash}"
                     echo "Image tag: ${env.IMAGE_TAG}"
                 }
             }
@@ -119,12 +119,12 @@ pipeline {
 
                     sh """
                         # DockerHub ID 교체 (초기 your-dockerhub-id 플레이스홀더 포함 대응)
-                        sed -i "s|name: docker.io/[^/]*/maplog-backend|name: docker.io/\${DOCKERHUB_USERNAME}/maplog-backend|g" k8s/kustomization.yaml
-                        sed -i "s|name: docker.io/[^/]*/maplog-frontend|name: docker.io/\${DOCKERHUB_USERNAME}/maplog-frontend|g" k8s/kustomization.yaml
+                        sed -i '' "s|name: docker.io/[^/]*/maplog-backend|name: docker.io/\${DOCKERHUB_USERNAME}/maplog-backend|g" k8s/kustomization.yaml
+                        sed -i '' "s|name: docker.io/[^/]*/maplog-frontend|name: docker.io/\${DOCKERHUB_USERNAME}/maplog-frontend|g" k8s/kustomization.yaml
 
                         # 이미지 태그 업데이트 (name 다음 줄의 newTag 만 교체)
-                        sed -i '/name: docker.io.*maplog-backend/{n;s/newTag: .*/newTag: \${IMAGE_TAG}/}' k8s/kustomization.yaml
-                        sed -i '/name: docker.io.*maplog-frontend/{n;s/newTag: .*/newTag: \${IMAGE_TAG}/}' k8s/kustomization.yaml
+                        sed -i '' '/name: docker.io.*maplog-backend/{n;s/newTag: .*/newTag: \${IMAGE_TAG}/}' k8s/kustomization.yaml
+                        sed -i '' '/name: docker.io.*maplog-frontend/{n;s/newTag: .*/newTag: \${IMAGE_TAG}/}' k8s/kustomization.yaml
 
                         git config user.email "jenkins@maplog.local"
                         git config user.name  "Jenkins CI"
