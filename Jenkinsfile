@@ -92,23 +92,20 @@ pipeline {
                         def tag = env.IMAGE_TAG
                         def username = env.DOCKERHUB_USERNAME
 
+                        if (!tag) {
+                            error("IMAGE_TAG is not set. Cannot update K8s manifest.")
+                        }
+
                         sh """
                             sed -i '' "s|name: docker.io/[^/]*/maplog-backend|name: docker.io/${username}/maplog-backend|g" k8s/kustomization.yaml
                             sed -i '' "s|name: docker.io/[^/]*/maplog-frontend|name: docker.io/${username}/maplog-frontend|g" k8s/kustomization.yaml
-                            sed -i '' '/name: docker.io.*maplog-backend/{
-n
-s/newTag: .*/newTag: ${tag}/
-}' k8s/kustomization.yaml
-                            sed -i '' '/name: docker.io.*maplog-frontend/{
-n
-s/newTag: .*/newTag: ${tag}/
-}' k8s/kustomization.yaml
+                            sed -i '' '/name: docker.io.*maplog-backend/,/newTag:/{s/newTag: .*/newTag: ${tag}/}' k8s/kustomization.yaml
+                            sed -i '' '/name: docker.io.*maplog-frontend/,/newTag:/{s/newTag: .*/newTag: ${tag}/}' k8s/kustomization.yaml
                             git config user.email "jenkins@maplog.local"
                             git config user.name  "Jenkins CI"
                             git remote set-url origin "https://\${GIT_USERNAME}:\${GIT_PASSWORD}@\${REPO_URL_CLEAN}"
                             git add k8s/kustomization.yaml
-                            git commit -m "ci: update image tag to ${tag} [skip ci]"
-                            git push origin HEAD:main
+                            git diff --staged --quiet || (git commit -m "ci: update image tag to ${tag} [skip ci]" && git push origin HEAD:main)
                         """
                     }
                 }
