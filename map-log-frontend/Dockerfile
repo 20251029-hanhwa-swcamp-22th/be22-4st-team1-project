@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+ARG VITE_KAKAO_MAP_KEY
+ENV VITE_KAKAO_MAP_KEY=$VITE_KAKAO_MAP_KEY
 RUN npm run build
 
 # 2. Production Stage
