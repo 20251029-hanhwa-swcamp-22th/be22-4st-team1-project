@@ -16,7 +16,7 @@ import java.util.Date;
 import java.util.UUID;
 
 @Service
-@org.springframework.context.annotation.Profile("aws")
+@org.springframework.context.annotation.Profile({"dev", "aws"})
 @RequiredArgsConstructor
 public class S3FileStorageService implements FileStorageService {
 
