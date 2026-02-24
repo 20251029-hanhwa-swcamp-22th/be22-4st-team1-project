@@ -16,7 +16,7 @@ pipeline {
 
         // Docker Hub 사용자 정보 및 레포지토리 URL
         DOCKERHUB_USER = 'gusgh07'
-        SOURCE_REPO_URL = 'https://github.com/gusgh075/be22-4st-team1-project.git'
+        SOURCE_REPO_URL = 'https://github.com/20251029-hanhwa-swcamp-22th/be22-4st-team1-project.git'
         MANIFEST_REPO_URL = 'https://github.com/gusgh075/k8s-manifests.git'
 
         // 이미지 이름 설정 (사용자명/이미지명 형식)
