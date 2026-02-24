@@ -53,7 +53,7 @@ Jenkins 관리 > Global Tool Configuration에서 다음 도구들의 이름을 `
 ## 4. ArgoCD 배포 전략 (CD)
 현재 ArgoCD의 Sync Policy는 **Manual(수동)**로 설정되어 있습니다.
 
-### ArgoCD 대시보드 접속 방법 (Dashboard Access)
+### 4.1. ArgoCD 대시보드 접속 방법 (Dashboard Access)
 보안상 외부로 노출되지 않은 ArgoCD 서버에 접속하기 위해 `kubectl port-forward`를 사용하여 로컬 환경과 연결합니다.
 
 1. **터미널에서 포트 포워딩 실행:**
@@ -67,6 +67,23 @@ Jenkins 관리 > Global Tool Configuration에서 다음 도구들의 이름을 `
 3. **로그인 정보:**
    - **ID:** `admin`
    - **Password:** 설치 시 생성된 초기 비밀번호 (보통 `argocd-initial-admin-secret`에서 확인 가능).
+
+### 4.2. ArgoCD 애플리케이션 생성 가이드 (Application Setup)
+ArgoCD 웹 UI에서 새로운 앱을 추가하는 상세 설정 값입니다.
+
+1. **"+ NEW APP"** 클릭 후 다음 정보를 입력합니다.
+2. **GENERAL**:
+   - **Application Name**: `map-log`
+   - **Project Name**: `default`
+   - **Sync Policy**: `Manual` (권장) 또는 `Automatic`
+3. **SOURCE**:
+   - **Repository URL**: `https://github.com/gusgh075/k8s-manifests.git`
+   - **Revision**: `main`
+   - **Path**: `.`
+4. **DESTINATION**:
+   - **Cluster URL**: `https://kubernetes.default.svc`
+   - **Namespace**: `default`
+5. 설정 완료 후 **"CREATE"** 버튼을 눌러 생성하고, 생성된 앱 카드에서 **"SYNC"**를 클릭하여 배포를 완료합니다.
 
 ## 5. 네트워크 및 도메인 배포 (ngrok)
 로컬 K8s 환경의 외부 노출 한계를 극복하기 위해 **ngrok**을 활용합니다.
