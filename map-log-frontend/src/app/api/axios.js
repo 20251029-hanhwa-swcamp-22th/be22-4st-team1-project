@@ -38,10 +38,11 @@ api.interceptors.response.use(
             const refreshToken = localStorage.getItem('ml_refresh_token')
 
             try {
-                const res = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/auth/refresh`,
-                    { refreshToken }
-                )
+                const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+                // baseUrl이 '/api'로 끝나면 중복되지 않게 처리
+                const refreshUrl = baseUrl.endsWith('/api') ? `${baseUrl}/auth/refresh` : `${baseUrl}/api/auth/refresh`
+
+                const res = await axios.post(refreshUrl, { refreshToken })
                 const newToken = res.data?.data?.accessToken
                 const newRefreshToken = res.data?.data?.refreshToken
 
