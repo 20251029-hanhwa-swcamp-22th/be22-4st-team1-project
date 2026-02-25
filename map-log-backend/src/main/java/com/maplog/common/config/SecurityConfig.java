@@ -38,29 +38,26 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-			.csrf(AbstractHttpConfigurer::disable)
-			.sessionManagement(session ->
-				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.cors(cors ->
-				cors.configurationSource(corsConfigurationSource()))
-			.exceptionHandling(exception ->
-				exception
-					.authenticationEntryPoint(restAuthenticationEntryPoint)
-					.accessDeniedHandler(restAccessDeniedHandler))
-			.authorizeHttpRequests(auth ->
-				auth
-					.requestMatchers(HttpMethod.POST,
-						"/api/auth/signup",
-						"/api/auth/login",
-						"/api/auth/refresh"
-					).permitAll()
-					.requestMatchers(HttpMethod.GET, "/api/users/check-nickname").permitAll()
-					.requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-					.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-					.anyRequest().authenticated())
-			.addFilterBefore(
-				jwtAuthenticationFilter(),
-				UsernamePasswordAuthenticationFilter.class);
+				.csrf(AbstractHttpConfigurer::disable)
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.exceptionHandling(exception -> exception
+						.authenticationEntryPoint(restAuthenticationEntryPoint)
+						.accessDeniedHandler(restAccessDeniedHandler))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(HttpMethod.POST,
+								"/api/auth/signup",
+								"/api/auth/login",
+								"/api/auth/refresh")
+						.permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/users/check-nickname").permitAll()
+						.requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+						.requestMatchers("/error").permitAll()
+						.requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+						.anyRequest().authenticated())
+				.addFilterBefore(
+						jwtAuthenticationFilter(),
+						UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}
@@ -74,7 +71,7 @@ public class SecurityConfig {
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration config = new CorsConfiguration();
 		config.setAllowedOriginPatterns(List.of("http://localhost:5173",
-			"https://*.ngrok-free.dev"));
+				"https://*.ngrok-free.dev"));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		config.setAllowedHeaders(List.of("*"));
 		config.setAllowCredentials(true);
@@ -82,6 +79,8 @@ public class SecurityConfig {
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/api/**", config);
+		// SSE 연결 경로도 동일한 CORS 정책 적용
+		source.registerCorsConfiguration("/api/sse/**", config);
 		return source;
 	}
 }
