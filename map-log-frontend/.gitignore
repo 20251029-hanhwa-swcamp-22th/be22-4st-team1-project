@@ -15,5 +15,3 @@ pnpm-debug.log*
 .idea/
 .vscode/
 .DS_Store
-
-package-lock.json
