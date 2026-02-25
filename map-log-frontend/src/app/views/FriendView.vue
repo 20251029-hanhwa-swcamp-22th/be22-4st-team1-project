@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { friendApi } from '@/app/api/friend.js'
 import { userApi } from '@/app/api/user.js'
 import { Search, UserCheck, UserPlus, X, Check, Trash2 } from 'lucide-vue-next'
@@ -83,6 +83,19 @@ async function deleteFriend(friendId, nickname) {
     alert(e?.message || '친구 삭제 실패')
   }
 }
+
+/**
+ * 【SSE 실시간 갱신】
+ * 알림 store의 friendEventTrigger가 변경되면
+ * (= 다른 사용자가 친구 요청/수락을 했을 때)
+ * 친구 목록과 받은 요청을 자동 재조회합니다.
+ */
+import { useNotificationStore } from '@/app/stores/notification.js'
+const notificationStore = useNotificationStore()
+
+watch(() => notificationStore.friendEventTrigger, () => {
+  load()  // 친구 목록 + 받은 요청 모두 재조회
+})
 
 onMounted(load)
 </script>

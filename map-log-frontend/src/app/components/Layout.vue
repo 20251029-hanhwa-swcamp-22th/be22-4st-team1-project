@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { MapPin, Rss, Users, Bell, User, LogOut, Shield } from 'lucide-vue-next'
 import { useAuthStore } from '@/app/stores/auth.js'
@@ -34,6 +34,8 @@ const avatarInitial = computed(() => {
 })
 
 async function handleLogout() {
+  // 로그아웃 시 SSE 연결 해제
+  notificationStore.disconnectSSE()
   await auth.logout()
   router.push('/login')
 }
@@ -41,7 +43,14 @@ async function handleLogout() {
 onMounted(() => {
   if (auth.isAuthenticated) {
     notificationStore.fetchNotifications()
+    // 【SSE 실시간 알림 연결】로그인 상태면 SSE 자동 연결
+    notificationStore.connectSSE()
   }
+})
+
+// 【SSE 연결 해제】컴포넌트 언마운트 시 정리
+onUnmounted(() => {
+  notificationStore.disconnectSSE()
 })
 </script>
 

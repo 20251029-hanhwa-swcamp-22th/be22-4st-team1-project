@@ -86,18 +86,29 @@ function initMap() {
     form.value.latitude = lat
     form.value.longitude = lng
 
-    // 【역지오코딩】클릭한 좌표를 시/구 단위 주소로 변환
-    // coord2RegionCode: 좌표 → 행정동/법정동 정보 반환
-    // result[0]에는 { region_1depth_name: '서울특별시', region_2depth_name: '강남구', ... } 형태
+    // 【역지오코딩 ①】클릭한 좌표를 시/구 단위 주소로 변환 → locationName
     geocoder.coord2RegionCode(lng, lat, (result, status) => {
       if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
-        // region_1depth_name = 시/도 (예: '서울특별시')
-        // region_2depth_name = 시/군/구 (예: '강남구')
         const region = result[0]
         form.value.locationName = `${region.region_1depth_name} ${region.region_2depth_name}`
       } else {
-        // 변환 실패 시 기본 텍스트
         form.value.locationName = '📍 지도에서 선택한 위치'
+      }
+    })
+
+    // 【역지오코딩 ②】클릭한 좌표를 도로명/지번 주소로 변환 → address
+    // coord2Address: 좌표 → { road_address, address } 형태 반환
+    // road_address.address_name = 도로명 주소 (예: '서울 종로구 사직로 161')
+    // address.address_name     = 지번 주소 (예: '서울 종로구 세종로 1-68')
+    geocoder.coord2Address(lng, lat, (result, status) => {
+      if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+        const addr = result[0]
+        // 도로명 주소 우선, 없으면 지번 주소 사용
+        form.value.address = addr.road_address
+          ? addr.road_address.address_name
+          : addr.address.address_name
+      } else {
+        form.value.address = ''
       }
     })
 
