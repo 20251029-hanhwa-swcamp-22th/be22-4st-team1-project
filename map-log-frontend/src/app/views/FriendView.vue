@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { friendApi } from '@/app/api/friend.js'
 import { userApi } from '@/app/api/user.js'
-import { Search, UserCheck, UserPlus, X, Check } from 'lucide-vue-next'
+import { Search, UserCheck, UserPlus, X, Check, Trash2 } from 'lucide-vue-next'
 import { mockFriends, mockPending } from '@/app/data/MockData.js'
 
 const tab = ref('friends') // 'friends' | 'pending'
@@ -69,6 +69,21 @@ function statusLabel(status) {
   return '친구 추가'
 }
 
+/**
+ * 【친구 삭제】
+ * 확인 대화상자 후 삭제 API 호출
+ * 성공 시 친구 목록을 재로드하여 UI 반영
+ */
+async function deleteFriend(friendId, nickname) {
+  if (!confirm(`${nickname}님을 친구에서 삭제하시겠습니까?`)) return
+  try {
+    await friendApi.deleteFriend(friendId)
+    await load()  // 친구 목록 재로드
+  } catch (e) {
+    alert(e?.message || '친구 삭제 실패')
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -130,11 +145,19 @@ onMounted(load)
             <img v-if="f.profileImageUrl" :src="f.profileImageUrl" :alt="f.nickname" />
             <span v-else>{{ f.nickname.charAt(0) }}</span>
           </div>
-          <div>
+          <div style="flex:1">
             <div style="font-size:14px;font-weight:600">{{ f.nickname }}</div>
             <div style="font-size:11px;color:var(--color-text-3)">친구 수락: {{ new Date(f.respondedAt).toLocaleDateString('ko-KR') }}</div>
           </div>
-          <span class="badge badge-success ml-auto">친구</span>
+          <span class="badge badge-success">친구</span>
+          <!-- 친구 삭제 버튼 -->
+          <button
+            class="btn btn-danger btn-sm"
+            style="display:flex;align-items:center;gap:4px"
+            @click="deleteFriend(f.friendId, f.nickname)"
+          >
+            <Trash2 :size="13" /> 삭제
+          </button>
         </div>
       </div>
     </template>
