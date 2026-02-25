@@ -19,5 +19,10 @@ export const friendApi = {
     /** 받은 친구 요청 목록 - GET /api/friends/pending */
     getPending() {
         return api.get('/friends/pending')
+    },
+
+    /** 친구 삭제(끊기) - DELETE /api/friends/:friendId */
+    deleteFriend(friendId) {
+        return api.delete(`/friends/${friendId}`)
     }
 }

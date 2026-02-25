@@ -3,8 +3,9 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { diaryApi } from '@/app/api/diary.js'
 import { friendApi } from '@/app/api/friend.js'
-import { X, Image, MapPin, Plus, Users } from 'lucide-vue-next'
+import { X, Image, MapPin, Plus, Users, Search } from 'lucide-vue-next'
 import { mockMarkers, mockFriends } from '@/app/data/MockData.js'
+import DaumPostcode from '@/app/components/DaumPostcode.vue'
 
 const router = useRouter()
 
@@ -29,14 +30,22 @@ const form = ref({
   longitude: null,
   locationName: '',
   address: '',
+  addressDetail: '',    // 상세 주소 (선택)
   visibility: 'PRIVATE',
   sharedUserIds: []
 })
 const loading = ref(false)
 const error = ref('')
 
-// ── 마커 팝업 ──
-const popup = ref(null)
+// ── 다음 주소 검색 레이어 상태 ──
+const showPostcode = ref(false)
+
+// ── 지도 상단 장소 검색 ──
+const searchQuery = ref('')       // 검색어 입력값
+const searchLoading = ref(false)  // 검색 중 로딩 상태
+
+// ── 마커 팝업 (카카오맵 CustomOverlay 인스턴스) ──
+let currentOverlay = null  // 현재 표시 중인 CustomOverlay 참조
 
 // ── 카카오맵 로드 ──
 function loadKakaoMap() {
@@ -49,7 +58,8 @@ function loadKakaoMap() {
     if (window.kakao?.maps) { resolve(); return }
 
     const script = document.createElement('script')
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&autoload=false`
+    // libraries=services 추가: Geocoder(좌표→주소 변환) 기능을 사용하기 위해 필요
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&autoload=false&libraries=services`
     script.onload = () => {
       window.kakao.maps.load(() => resolve())
     }
@@ -65,6 +75,9 @@ function initMap() {
     level: 5
   })
 
+  // 【역지오코딩용 Geocoder 인스턴스】좌표 → 행정구역(시/구) 변환에 사용
+  const geocoder = new window.kakao.maps.services.Geocoder()
+
   // 지도 클릭 시 위치 선택
   window.kakao.maps.event.addListener(map, 'click', (e) => {
     const lat = e.latLng.getLat()
@@ -72,8 +85,33 @@ function initMap() {
     selectedLocation.value = { lat, lng }
     form.value.latitude = lat
     form.value.longitude = lng
-    // 간단히 좌표로 주소 표시 (실제는 좌표→주소 변환 API 사용)
-    form.value.locationName = `위도 ${lat.toFixed(4)}, 경도 ${lng.toFixed(4)}`
+
+    // 【역지오코딩 ①】클릭한 좌표를 시/구 단위 주소로 변환 → locationName
+    geocoder.coord2RegionCode(lng, lat, (result, status) => {
+      if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+        const region = result[0]
+        form.value.locationName = `${region.region_1depth_name} ${region.region_2depth_name}`
+      } else {
+        form.value.locationName = '📍 지도에서 선택한 위치'
+      }
+    })
+
+    // 【역지오코딩 ②】클릭한 좌표를 도로명/지번 주소로 변환 → address
+    // coord2Address: 좌표 → { road_address, address } 형태 반환
+    // road_address.address_name = 도로명 주소 (예: '서울 종로구 사직로 161')
+    // address.address_name     = 지번 주소 (예: '서울 종로구 세종로 1-68')
+    geocoder.coord2Address(lng, lat, (result, status) => {
+      if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+        const addr = result[0]
+        // 도로명 주소 우선, 없으면 지번 주소 사용
+        form.value.address = addr.road_address
+          ? addr.road_address.address_name
+          : addr.address.address_name
+      } else {
+        form.value.address = ''
+      }
+    })
+
     showModal.value = true
   })
 
@@ -111,16 +149,79 @@ async function loadFriends() {
 }
 
 function renderMarkers(list) {
-  // 기존 마커 제거
+  // 기존 마커 및 오버레이 제거
   markers.forEach(m => m.setMap(null))
   markers = []
+  if (currentOverlay) {
+    currentOverlay.setMap(null)
+    currentOverlay = null
+  }
 
   list.forEach(item => {
     const pos = new window.kakao.maps.LatLng(item.latitude, item.longitude)
     const marker = new window.kakao.maps.Marker({ position: pos, map })
 
+    // 【호버】마커 위에 일기 미리보기 CustomOverlay 표시
+    window.kakao.maps.event.addListener(marker, 'mouseover', () => {
+      // 기존 오버레이 제거
+      if (currentOverlay) currentOverlay.setMap(null)
+
+      // 【CustomOverlay HTML】마커 바로 위에 뜨는 미리보기 카드
+      // ⚠️ CustomOverlay는 카카오맵 iframe 위에 렌더링되므로 CSS 변수가 상속되지 않음
+      //    → 색상을 직접 지정하여 다크/라이트 모드 모두 잘 보이게 처리
+      const content = `
+        <div style="
+          background: #1e1e2e;
+          border: 1px solid #3a3a4a;
+          border-radius: 12px;
+          padding: 12px 16px;
+          min-width: 180px;
+          max-width: 240px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+          transform: translateY(-12px);
+          pointer-events: auto;
+          position: relative;
+        ">
+          <div style="font-size:13px;font-weight:700;color:#f0f0f0;margin-bottom:4px;">
+            ${item.title || '제목 없음'}
+          </div>
+          <div style="font-size:11px;color:#9ca3af;display:flex;align-items:center;gap:3px;">
+            📍 ${item.locationName || '위치 정보 없음'}
+          </div>
+          <div style="
+            width:0;height:0;
+            border-left:8px solid transparent;
+            border-right:8px solid transparent;
+            border-top:8px solid #1e1e2e;
+            position:absolute;
+            bottom:-8px;
+            left:50%;
+            transform:translateX(-50%);
+          "></div>
+        </div>
+      `
+
+      // CustomOverlay: 마커 좌표 위치에 매핑, yAnchor=1.3으로 마커 위로 띄움
+      currentOverlay = new window.kakao.maps.CustomOverlay({
+        position: pos,
+        content: content,
+        yAnchor: 1.3,   // 1보다 크면 마커보다 위로 올라감
+        xAnchor: 0.5     // 가로 중앙 정렬
+      })
+      currentOverlay.setMap(map)
+    })
+
+    // 【호버 해제】마커에서 마우스가 벗어나면 오버레이 숨김
+    window.kakao.maps.event.addListener(marker, 'mouseout', () => {
+      if (currentOverlay) {
+        currentOverlay.setMap(null)
+        currentOverlay = null
+      }
+    })
+
+    // 【클릭】마커 클릭 시 상세 페이지로 이동
     window.kakao.maps.event.addListener(marker, 'click', () => {
-      popup.value = item
+      router.push(`/diaries/${item.id}`)
     })
 
     markers.push(marker)
@@ -185,8 +286,33 @@ async function saveDiary() {
 
 function closeModal() {
   showModal.value = false
-  form.value = { title:'',content:'',images:[],imagePreviews:[],latitude:null,longitude:null,locationName:'',address:'',visibility:'PRIVATE',sharedUserIds:[] }
+  form.value = { title:'',content:'',images:[],imagePreviews:[],latitude:null,longitude:null,locationName:'',address:'',addressDetail:'',visibility:'PRIVATE',sharedUserIds:[] }
   error.value = ''
+}
+
+/**
+ * 【다음 주소 검색 완료 핸들러】
+ * DaumPostcode 컴포넌트에서 @complete 이벤트로 전달받은 주소 데이터를 처리합니다.
+ *
+ * @param {Object} data - 다음 우편번호 서비스가 반환하는 주소 데이터
+ *   - data.roadAddress: 도로명 주소 (예: "서울 강남구 테헤란로 152")
+ *   - data.jibunAddress: 지번 주소 (예: "서울 강남구 역삼동 737")
+ *   - data.address: 기본 주소 (도로명 우선, 없으면 지번)
+ *   - data.buildingName: 건물명 (예: "강남파이낸스센터")
+ *   - data.zonecode: 우편번호 (예: "06236")
+ */
+function onAddressComplete(data) {
+  // 도로명 주소 우선, 없으면 지번 주소 사용
+  const fullAddress = data.roadAddress || data.jibunAddress || data.address
+
+  // 건물명이 있으면 주소 뒤에 괄호로 추가 (예: "서울 강남구 테헤란로 152 (강남파이낸스센터)")
+  const displayAddress = data.buildingName
+    ? `${fullAddress} (${data.buildingName})`
+    : fullAddress
+
+  // form 데이터에 주소 정보 반영
+  form.value.address = displayAddress          // 전체 주소 (도로명 + 건물명)
+  form.value.locationName = data.sido + ' ' + data.sigungu  // 시/도 + 시/군/구 (간략 위치명)
 }
 
 onMounted(async () => {
@@ -202,11 +328,106 @@ onMounted(async () => {
 
 onUnmounted(() => {
   markers.forEach(m => m.setMap(null))
+  if (currentOverlay) currentOverlay.setMap(null)
 })
+
+/**
+ * 【지도 상단 주소/장소 검색】
+ * 1차: Geocoder.addressSearch() → 도로명/지번 주소 검색 (예: "한천로 97-10")
+ * 2차: Places.keywordSearch()  → 장소명/키워드 검색 (예: "강남역", "스타벅스")
+ *
+ * 주소 검색이 실패하면 자동으로 장소 검색으로 폴백(fallback)합니다.
+ */
+function searchPlace() {
+  const keyword = searchQuery.value.trim()
+  if (!keyword || !map) return
+
+  searchLoading.value = true
+
+  const geocoder = new window.kakao.maps.services.Geocoder()
+  const ps = new window.kakao.maps.services.Places()
+
+  // 【1차】주소 검색 시도 (도로명/지번 주소에 적합)
+  geocoder.addressSearch(keyword, (result, status) => {
+    if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+      // 주소 검색 성공 → 해당 좌표로 이동
+      searchLoading.value = false
+      const coord = result[0]
+      const moveLatLng = new window.kakao.maps.LatLng(coord.y, coord.x)
+      map.panTo(moveLatLng)  // 부드러운 이동
+      map.setLevel(3)        // 확대하여 상세 보기
+    } else {
+      // 【2차 폴백】주소 검색 실패 → 장소명/키워드로 재검색
+      ps.keywordSearch(keyword, (placeResult, placeStatus) => {
+        searchLoading.value = false
+
+        if (placeStatus === window.kakao.maps.services.Status.OK && placeResult.length > 0) {
+          const place = placeResult[0]
+          const moveLatLng = new window.kakao.maps.LatLng(place.y, place.x)
+          map.panTo(moveLatLng)
+          map.setLevel(3)
+        } else {
+          alert('검색 결과가 없습니다. 다른 키워드로 검색해주세요.')
+        }
+      })
+    }
+  })
+}
 </script>
 
 <template>
   <div style="position:relative;width:100%;height:100vh;overflow:hidden;">
+
+    <!-- 【지도 상단 검색바】주소/장소 검색 → 해당 위치로 지도 이동 -->
+    <div
+      v-if="mapReady"
+      style="
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: flex;
+        gap: 8px;
+        width: 90%;
+        max-width: 480px;
+      "
+    >
+      <input
+        v-model="searchQuery"
+        type="text"
+        class="form-input"
+        placeholder="장소나 주소를 검색하세요"
+        style="
+          flex: 1;
+          background: var(--color-bg-2, #fff);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+          border: none;
+          padding: 12px 16px;
+          font-size: 14px;
+          border-radius: 12px;
+        "
+        @keyup.enter="searchPlace"
+      />
+      <button
+        class="btn btn-primary"
+        style="
+          padding: 12px 20px;
+          border-radius: 12px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          white-space: nowrap;
+        "
+        :disabled="searchLoading"
+        @click="searchPlace"
+      >
+        <Search :size="16" />
+        <span v-if="!searchLoading">검색</span>
+        <span v-else class="spinner" style="width:14px;height:14px;border-width:2px"></span>
+      </button>
+    </div>
 
     <!-- 카카오맵 -->
     <div ref="mapContainer" style="width:100%;height:100%;background:var(--color-bg-3)"></div>
@@ -247,24 +468,7 @@ onUnmounted(() => {
       <Plus :size="18" /> 일기 쓰기
     </button>
 
-    <!-- 마커 팝업 -->
-    <div
-      v-if="popup"
-      style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:var(--color-bg-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px 20px;min-width:220px;box-shadow:var(--shadow-lg);z-index:10"
-    >
-      <button class="modal-close" style="position:absolute;top:8px;right:8px" @click="popup=null">✕</button>
-      <div style="font-size:13px;font-weight:600;padding-right:24px">{{ popup.title }}</div>
-      <div style="font-size:11px;color:var(--color-text-2);margin-top:4px;display:flex;align-items:center;gap:4px">
-        <MapPin :size="11" />{{ popup.locationName }}
-      </div>
-      <button
-        class="btn btn-primary btn-sm"
-        style="margin-top:12px;width:100%"
-        @click="router.push(`/diaries/${popup.id}`)"
-      >
-        일기 보기
-      </button>
-    </div>
+
 
     <!-- 일기 작성 모달 -->
     <Teleport to="body">
@@ -323,11 +527,40 @@ onUnmounted(() => {
               </div>
             </div>
 
+            <!-- 【주소 검색 영역】다음 우편번호 서비스 연동 -->
             <div class="form-group">
-              <label class="form-label">주소 (선택)</label>
-              <input v-model="form.address" type="text" class="form-input" placeholder="상세 주소를 입력하세요" />
+              <label class="form-label">
+                <span style="display:flex;align-items:center;gap:6px"><MapPin :size="14" />주소</span>
+              </label>
+              <!-- 주소 검색 버튼: 클릭 시 iframe 레이어 열기 -->
+              <div style="display:flex;gap:8px">
+                <input
+                  v-model="form.address"
+                  type="text"
+                  class="form-input"
+                  placeholder="주소 검색 버튼을 눌러주세요"
+                  readonly
+                  style="flex:1;cursor:pointer;background:var(--color-bg-3, #f9fafb)"
+                  @click="showPostcode = true"
+                />
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  style="white-space:nowrap;padding:8px 16px;display:flex;align-items:center;gap:4px"
+                  @click="showPostcode = true"
+                >
+                  <Search :size="14" />검색
+                </button>
+              </div>
+              <!-- 상세 주소 입력: 동/호수 등 세부 정보 (선택사항) -->
+              <input
+                v-model="form.addressDetail"
+                type="text"
+                class="form-input"
+                placeholder="상세 주소를 입력하세요 (예: 3층 301호)"
+                style="margin-top:8px"
+              />
             </div>
-
             <p v-if="error" class="text-danger text-sm">{{ error }}</p>
           </div>
           <div class="modal-footer">
@@ -340,5 +573,8 @@ onUnmounted(() => {
         </div>
       </div>
     </Teleport>
+
+    <!-- 【다음 주소 검색 레이어】v-model로 열림/닫힘 제어, @complete로 선택 결과 수신 -->
+    <DaumPostcode v-model="showPostcode" @complete="onAddressComplete" />
   </div>
 </template>

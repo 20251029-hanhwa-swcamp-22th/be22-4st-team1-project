@@ -36,4 +36,16 @@ public class FriendCommandController {
         friendCommandService.respondToRequest(userDetails.getUsername(), friendId, request);
         return ResponseEntity.ok(ApiResponse.success("친구 요청에 응답했습니다.", null));
     }
+
+    /**
+     * 친구 삭제(끊기) - DELETE /api/friends/{friendId}
+     * 인증된 사용자가 자신의 친구 관계를 삭제합니다.
+     */
+    @DeleteMapping("/{friendId}")
+    public ResponseEntity<ApiResponse<Void>> deleteFriend(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long friendId) {
+        friendCommandService.deleteFriend(userDetails.getUsername(), friendId);
+        return ResponseEntity.ok(ApiResponse.success("친구를 삭제했습니다.", null));
+    }
 }
