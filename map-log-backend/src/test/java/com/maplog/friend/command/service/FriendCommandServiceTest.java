@@ -109,6 +109,27 @@ class FriendCommandServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ALREADY_FRIEND);
         }
+
+        @Test
+        @DisplayName("이미 친구 신청을 보낸 경우 예외 발생")
+        void failAlreadyRequested() {
+            // given
+            String email = "requester@email.com";
+            SendFriendRequest request = new SendFriendRequest(2L);
+            User requester = User.create(email, "pw", "req");
+            ReflectionTestUtils.setField(requester, "id", 1L);
+
+            Friend friend = Friend.create(1L, 2L); // Default status is PENDING
+
+            given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(requester));
+            given(userCommandRepository.findByIdAndDeletedAtIsNull(2L)).willReturn(Optional.of(mock(User.class)));
+            given(friendCommandRepository.findByUsers(1L, 2L)).willReturn(Optional.of(friend));
+
+            // when & then
+            assertThatThrownBy(() -> friendCommandService.sendFriendRequest(email, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ALREADY_FRIEND_REQUESTED);
+        }
     }
 
     @Nested
@@ -153,6 +174,21 @@ class FriendCommandServiceTest {
             assertThatThrownBy(() -> friendCommandService.respondToRequest(email, 100L, new FriendRespondRequest(FriendStatus.ACCEPTED)))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 친구 요청에 응답 시도 시 예외 발생")
+        void failRequestNotFound() {
+            // given
+            String email = "receiver@email.com";
+            User receiver = User.create(email, "pw", "recNickname");
+            given(userCommandRepository.findByEmailAndDeletedAtIsNull(email)).willReturn(Optional.of(receiver));
+            given(friendCommandRepository.findById(anyLong())).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> friendCommandService.respondToRequest(email, 999L, new FriendRespondRequest(FriendStatus.ACCEPTED)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FRIEND_REQUEST_NOT_FOUND);
         }
     }
 }
