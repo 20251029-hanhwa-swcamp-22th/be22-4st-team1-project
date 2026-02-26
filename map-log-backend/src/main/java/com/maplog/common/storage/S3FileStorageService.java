@@ -11,7 +11,10 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Date;
 import java.util.UUID;
 
@@ -33,20 +36,35 @@ public class S3FileStorageService implements FileStorageService {
 
         String originalFilename = file.getOriginalFilename();
         String extension = (originalFilename != null && originalFilename.contains("."))
-                ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+                ? originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase()
                 : "";
-        String key = "diaries/" + UUID.randomUUID() + extension;
 
         try {
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType(file.getContentType());
-            metadata.setContentLength(file.getSize());
+            byte[] fileBytes;
+            String uploadExtension;
+            String contentType;
 
-            amazonS3.putObject(bucket, key, file.getInputStream(), metadata);
+            if (extension.equals(".heic") || extension.equals(".heif")) {
+                fileBytes = convertHeicToPng(file);
+                uploadExtension = ".png";
+                contentType = "image/png";
+            } else {
+                fileBytes = file.getBytes();
+                uploadExtension = extension;
+                contentType = file.getContentType();
+            }
+
+            String key = "diaries/" + UUID.randomUUID() + uploadExtension;
+
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(contentType);
+            metadata.setContentLength(fileBytes.length);
+
+            amazonS3.putObject(bucket, key, new ByteArrayInputStream(fileBytes), metadata);
 
             return amazonS3.getUrl(bucket, key).toString();
 
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }
@@ -81,5 +99,22 @@ public class S3FileStorageService implements FileStorageService {
             return fileUrl.substring(fileUrl.lastIndexOf(".com/") + 5);
         }
         return fileUrl;
+    }
+
+    private byte[] convertHeicToPng(MultipartFile file) throws IOException, InterruptedException {
+      File tempHeic = File.createTempFile("upload-", ".heic");
+      File tempPng = File.createTempFile("upload-", ".png");
+      try {
+        file.transferTo(tempHeic);
+        ProcessBuilder pb = new ProcessBuilder("convert", tempHeic.getAbsolutePath(), tempPng.getAbsolutePath());
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+        int exitCode = process.waitFor();
+        if (exitCode != 0) throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
+        return Files.readAllBytes(tempPng.toPath());
+      } finally {
+        tempHeic.delete();
+        tempPng.delete();
+      }
     }
 }
