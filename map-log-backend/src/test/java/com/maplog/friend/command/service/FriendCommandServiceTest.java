@@ -8,6 +8,7 @@ import com.maplog.friend.command.dto.FriendRespondRequest;
 import com.maplog.friend.command.dto.SendFriendRequest;
 import com.maplog.friend.command.repository.FriendCommandRepository;
 import com.maplog.notification.command.service.NotificationCommandService;
+import com.maplog.sse.SseEmitterService;
 import com.maplog.user.command.domain.User;
 import com.maplog.user.command.repository.UserCommandRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,9 @@ class FriendCommandServiceTest {
 
     @Mock
     private NotificationCommandService notificationCommandService;
+
+    @Mock
+    private SseEmitterService sseEmitterService;
 
     @Nested
     @DisplayName("친구 요청 테스트")
