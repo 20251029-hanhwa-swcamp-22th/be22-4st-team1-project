@@ -51,9 +51,16 @@ Jenkins 관리 > Global Tool Configuration에서 다음 도구들의 이름을 `
 - **Docker:** Docker 빌드가 가능한 환경이어야 하며, Jenkins 사용자가 Docker 그룹에 포함되어야 합니다.
 
 ## 4. ArgoCD 배포 전략 (CD)
-현재 ArgoCD의 Sync Policy는 **Manual(수동)**로 설정되어 있습니다.
+현재 MapLog 프로젝트는 ArgoCD를 통해 **GitOps** 기반 배포를 수행하며, `argocd-application.yaml` 설정을 통해 자동 동기화를 지원합니다.
 
-### 4.1. ArgoCD 대시보드 접속 방법 (Dashboard Access)
+### 4.1. 자동 동기화 및 자가 치유 (Automated Sync & Self-Heal)
+`k8s-manifests` 레포지토리의 변경 사항을 클러스터에 자동으로 반영하기 위해 다음 옵션을 활성화합니다.
+- **Automated Sync:** Git의 최신 매니페스트와 클러스터 상태를 자동으로 일치시킵니다.
+- **Prune:** Git에서 삭제된 리소스를 클러스터에서도 자동으로 삭제하여 불필요한 리소스 잔류를 방지합니다.
+- **Self-Heal:** 클러스터 리소스가 수동으로 변경(Drift)되었을 때, Git의 정의된 상태로 강제 복구하여 구성의 일관성을 유지합니다.
+- **CreateNamespace:** 배포 대상 네임스페이스(`map-log`)가 없을 경우 자동으로 생성합니다.
+
+### 4.2. ArgoCD 대시보드 접속 방법 (Dashboard Access)
 보안상 외부로 노출되지 않은 ArgoCD 서버에 접속하기 위해 `kubectl port-forward`를 사용하여 로컬 환경과 연결합니다.
 
 1. **터미널에서 포트 포워딩 실행:**

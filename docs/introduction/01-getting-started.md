@@ -8,6 +8,7 @@
 - **Node.js:** v20 이상 (npm 포함)
 - **Docker:** Desktop 버전 (Kubernetes 활성화 권장)
 - **Database:** MariaDB 11 (로컬 실행 시)
+- **UI Icons:** Lucide Vue Next (프론트엔드 의존성)
 
 ## 2. 환경 변수 설정 (Environment Variables)
 프로젝트는 민감한 정보를 환경 변수로 관리합니다. 로컬 실행과 K8s 실행 방식에 따라 설정 방법이 다릅니다.
@@ -21,6 +22,7 @@
   VITE_API_BASE_URL=http://localhost:8080
   VITE_KAKAO_MAP_KEY=your_kakao_javascript_key
   ```
+> **참고:** 프론트엔드는 `src/app/api/axios.js`에서 공통 설정을 관리하며, 401 Unauthorized 에러 발생 시 `refreshToken`을 사용하여 자동으로 토큰을 갱신하는 인터셉터 로직이 구현되어 있습니다.
 
 ### 2.2 Kubernetes 실행 (K8s Deployment)
 필수 키값은 외부 레포지토리(`k8s-manifests`)의 `secret.yaml`과 **Jenkins Credentials**를 통해 주입됩니다. 배포 전 다음 항목들이 올바르게 설정되어 있는지 확인하십시오.
