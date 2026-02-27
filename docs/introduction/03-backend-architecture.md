@@ -5,19 +5,10 @@ MapLog 백엔드는 Spring Boot 3.5 기반으로 설계되었으며, 도메인 �
 ## 1. 패키지 구조 및 패턴 (CQRS)
 각 도메인은 명확한 역할 분리를 위해 **Command(쓰기)**와 **Query(읽기)** 패키지로 분리되어 있습니다.
 
-```mermaid
-graph LR
-    subgraph "Domain Package"
-        C[Command] -->|State Change| DB[(MariaDB)]
-        Q[Query] -->|Read Only| DB
-    end
-    Controller --> C
-    Controller --> Q
-```
-
-- **Command:** 비즈니스 로직 처리, 데이터 생성/수정/삭제를 담당합니다.
+- **Command:** 비즈니스 로직 처리, 데이터 생성/수정/삭제를 담당합니다. (Spring Data JPA 사용)
 - **Query:** 복잡한 조회 로직, DTO 매핑, 성능 최적화(MyBatis 연동 등)를 담당합니다.
-- **장점:** 읽기와 쓰기의 모델을 분리함으로써 시스템의 복잡도를 낮추고 각 요청의 특성에 맞는 최적화가 가능합니다.
+- **SSE (sse):** `SseController`와 `SseEmitterService`를 통해 실시간 알림 이벤트를 관리하며, `ConcurrentHashMap`을 사용하여 사용자별 연결 세션을 유지합니다.
+- **MyBatis 연동:** 단순 CRUD 외에 대량의 데이터 조회나 복잡한 조인(예: 일기 목록 페이징, 친구 검색 등)은 `src/main/resources/mybatis`의 XML 매퍼를 통해 쿼리 수준에서 최적화합니다.
 
 ## 2. 파일 저장 전략 (AWS S3)
 이미지 첨부 기능을 위해 AWS S3 인프라를 활용하며, 보안을 위해 **Presigned URL** 방식을 채택했습니다.
