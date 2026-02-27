@@ -1,537 +1,149 @@
-# 📍 MapLog — 지도 위의 나만의 일기
+<div align="center">
+  <img src="docs/image/logo_placeholder.png" alt="MapLog Logo" width="200" height="200" />
+  <h1>📍 MapLog</h1>
+  <p><strong>위치 기반 소셜 다이어리 서비스</strong></p>
+  <p>방문한 장소를 지도에 마킹하고, 일기를 기록하며 친구들과 실시간으로 공유하세요.</p>
+</div>
 
-> 방문한 장소를 지도에 마킹하고 일기를 기록하는 소셜 다이어리 서비스
+<br/>
 
----
+## 👥 2. 팀원 소개 및 역할 분담
 
-## 📌 목차
+**개발 인원:** 4명 | **개발 기간:** 약 2주
 
-- [프로젝트 소개](#프로젝트-소개)
-- [기술 스택](#기술-스택)
-- [아키텍처](#아키텍처)
-  - [백엔드 아키텍처 (CQRS, S3)](docs/introduction/03-backend-architecture.md)
-  - [프론트엔드 아키텍처 (Pinia, Axios)](docs/introduction/04-frontend-architecture.md)
-  - [SSE 실시간 알림 가이드](docs/infrastructure/sse-guide.md)
-  - [K8s 클러스터 아키텍처 명세](docs/infrastructure/k8s-architecture.md)
-- [패키지 구조](#패키지-구조)
-- [프론트엔드 구조](#프론트엔드-구조)
-- [역할 분담](#역할-분담)
-- [프론트엔드 개발 가이드](#프론트엔드-개발-가이드)
-- [개발 환경 설정](#개발-환경-설정)
-- [환경 변수](#환경-변수)
-- [API 공통 규격](#api-공통-규격)
-- [주요 API 엔드포인트](#주요-api-엔드포인트)
-- [테스트](#테스트)
-- [Git 컨벤션](#git-컨벤션)
-- [기여 가이드](#기여-가이드)
-- [라이선스](#라이선스)
+| 이름 | 역할 및 담당 도메인 | 주요 기여 내역 |
+|:---:|:---|:---|
+| **정현호** | Backend / User | • 회원가입/로그인 및 JWT 인증 구현<br>• 관리자 API 구현 |
+| **김선일** | Backend / Diary | • 위치 기반 일기 작성 및 조회(CQRS) 구현<br>• AWS S3 이미지 업로드 구현 |
+| **정병진** | Backend / Social | • 친구 요청/수락 기능 및 피드 구현<br>• SSE 기반 실시간 알림 시스템 구축 |
+| **김태형** | DevOps / Infra | • 공통 예외 처리 및 응답 포맷 구성<br>• Jenkins, ArgoCD, K8s 배포 자동화 파이프라인 구축 |
 
----
+<br/>
 
-## 프로젝트 소개
+## ✨ 3. 주요 기능 (Key Features)
 
-MapLog는 사용자가 방문한 장소를 지도에 마킹하고, 그 위에 일기를 작성할 수 있는 소셜 다이어리 서비스입니다.
+| 기능명 | 상세 요구사항 및 설명 |
+|:---|:---|
+| 🗺️ **지도 기반 일기 작성** | 1. 카카오 맵 API를 연동하여 지도 위 원하는 위치를 클릭해 일기를 작성할 수 있습니다.<br>2. 작성된 일기는 지도상에 마커로 렌더링되며 클러스터링을 지원합니다. |
+| 🖼️ **다중 이미지 업로드** | 1. 일기 작성 및 수정 시 여러 장의 이미지를 첨부할 수 있습니다.<br>2. Presigned URL 방식을 통해 S3에 안전하게 이미지를 저장하고 조회합니다. |
+| 👥 **친구 및 피드 공유** | 1. 이메일 기반으로 친구를 검색하고 친구 요청을 보낼 수 있습니다.<br>2. 공개 범위 설정에 따라 내 일기를 친구들의 피드에 공유할 수 있습니다. |
+| 🔔 **실시간 알림 (SSE)** | 1. 친구 요청, 수락 등 소셜 인터랙션 발생 시 SSE를 통해 실시간 알림을 수신합니다.<br>2. 헤더의 종 아이콘을 통해 읽지 않은 알림 개수를 즉각적으로 확인할 수 있습니다. |
 
-### ✨ 핵심 기능
+<br/>
 
-| 기능 | 설명 |
-|------|------|
-| 🗺️ 지도 기반 일기 | 위치 정보와 함께 일기 작성, 지도 위에 마커로 표시 |
-| 🖼️ 이미지 첨부 | 일기 작성/수정 시 이미지 파일 멀티파트 업로드 |
-| 🔒 공개 범위 설정 | 친구 공개 / 비공개 선택 |
-| 👥 소셜 기능 | 친구 추가, 공유받은 일기 조회 |
-| 📤 일기 공유 | 특정 친구에게 일기 직접 공유 / 공유 취소 |
-| 🔖 스크랩 | 마음에 드는 일기 북마크 |
-| 🔔 알림 | 친구 요청 등 알림, 일괄 삭제 지원 |
-
----
-
-## 기술 스택
-
-### Backend
-
-| 분류 | 기술 |
-|------|------|
-| Language | Java 21 |
-| Framework | Spring Boot 3.5 |
-| Build | Gradle |
-| ORM | Spring Data JPA |
-| DB | MariaDB 11 |
-| Security | Spring Security + JWT |
-| Infra | Docker, Kubernetes, Jenkins |
+## 🛠 4. 기술 스택 (Tech Stack)
 
 ### Frontend
+![Vue.js](https://img.shields.io/badge/Vue.js_3-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Pinia](https://img.shields.io/badge/Pinia-FFE56F?style=flat-square&logo=vue.js&logoColor=black)
+![Axios](https://img.shields.io/badge/Axios-5A29E4?style=flat-square&logo=axios&logoColor=white)
 
-| 분류 | 기술 |
-|------|------|
-| Framework | Vue 3 (Composition API) |
-| Router | Vue Router 4 |
-| Build | Vite |
-| HTTP | Axios |
+### Backend
+![Java 21](https://img.shields.io/badge/Java_21-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
+![Spring Boot 3.5](https://img.shields.io/badge/Spring_Boot_3.5-6DB33F?style=flat-square&logo=springboot&logoColor=white)
+![Spring Data JPA](https://img.shields.io/badge/Spring_Data_JPA-6DB33F?style=flat-square&logo=spring&logoColor=white)
+![MyBatis](https://img.shields.io/badge/MyBatis-000000?style=flat-square&logo=mybatis&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat-square&logo=springsecurity&logoColor=white)
 
----
+### Infrastructure & DevOps
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white)
+![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=flat-square&logo=jenkins&logoColor=white)
+![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=flat-square&logo=argo&logoColor=white)
+![AWS S3](https://img.shields.io/badge/AWS_S3-569A31?style=flat-square&logo=amazons3&logoColor=white)
+![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=flat-square&logo=mariadb&logoColor=white)
 
-## 아키텍처
+<br/>
 
-```
-┌────────────────────────────────────────────────┐
-│                   Vue 3 Frontend               │
-└───────────────────────┬────────────────────────┘
-                        │ REST API
-┌───────────────────────▼────────────────────────┐
-│              Spring Boot Backend               │
-│                                                │
-│  ┌─────────────────────┐  ┌──────────────────┐ │
-│  │    Spring Data JPA  │  │  Spring Security │ │
-│  │      (ORM)          │  │   JWT Auth       │ │
-│  └──────────┬──────────┘  └──────────────────┘ │
-│             │                                  │
-│  ┌──────────▼──────────────────────────────┐   │
-│  │             MariaDB 11                   │   │
-│  └─────────────────────────────────────────┘   │
-└────────────────────────────────────────────────┘
-```
+## 🏗 5. 시스템 아키텍처 및 CI/CD 파이프라인
 
----
+MapLog 프로젝트는 무중단 자동화 배포를 위해 **GitOps** 기반의 CI/CD 파이프라인을 구축했습니다.
 
-## 패키지 구조
-
-```
-src/main/java/com/maplog/
-├── user/             # 회원 + 인증 (JWT, 로그인/회원가입)
-│   ├── command/      # 쓰기 (Controller, Service, Domain, Repository, DTO)
-│   └── query/        # 읽기 (Controller, Service, Repository, DTO)
-├── diary/            # 일기 + 스크랩 + 이미지 + 공유
-│   ├── command/
-│   └── query/
-├── friend/           # 친구
-│   ├── command/
-│   └── query/
-├── notification/     # 알림
-│   ├── command/
-│   └── query/
-└── common/           # 공통 (응답 포맷, 예외처리, JWT 필터, 설정)
-    └── storage/      # 파일 업로드/삭제 (FileStorageService)
+```mermaid
+graph TD
+    A[Developer] -->|Push Code| B(GitHub: Source Repo)
+    B -->|Webhook via ngrok| C[Jenkins Pipeline]
+    
+    subgraph "CI Pipeline (Jenkins)"
+        C -->|Build| D[Gradle / NPM Build]
+        D -->|Dockerize| E[Docker Hub]
+    end
+    
+    C -->|Update Tag| F(GitHub: Manifest Repo)
+    
+    subgraph "CD Pipeline (ArgoCD & Kubernetes)"
+        F -->|Watch & Sync| G[ArgoCD]
+        G -->|Deploy| H[Nginx Ingress]
+        H -.->|/| FE_Pod[Frontend Pods]
+        H -.->|/api| BE_Pod[Backend Pods]
+    end
 ```
 
----
+- **CI 과정:** GitHub에 코드가 푸시되면 Webhook과 ngrok 터널링을 통해 Jenkins가 이를 감지하여 프론트엔드 및 백엔드를 빌드하고, 도커 이미지를 Docker Hub에 푸시합니다.
+- **CD 과정:** Jenkins가 매니페스트 저장소의 이미지 태그를 업데이트하면, 클러스터 내부의 ArgoCD가 이를 감지(Self-Heal & Prune)하여 Kubernetes에 자동으로 배포합니다.
 
-## 프론트엔드 구조
+<br/>
 
-```
-map-log-frontend/
-├── index.html
-├── vite.config.js
-├── package.json
-└── src/
-    ├── main.js
-    └── app/
-        ├── App.vue
-        ├── router/
-        │   └── index.js
-        ├── api/
-        │   ├── axios.js
-        │   ├── auth.js
-        │   ├── diary.js
-        │   ├── friend.js
-        │   ├── notification.js
-        │   └── user.js
-        ├── components/
-        │   └── Layout.vue
-        ├── styles/
-        │   └── index.css
-        ├── data/
-        │   └── MockData.js
-        └── views/
-            ├── LoginView.vue
-            ├── SignUpView.vue
-            ├── MapView.vue
-            ├── FeedView.vue
-            ├── FriendView.vue
-            ├── NotificationsView.vue
-            ├── MyPageView.vue
-            ├── DiaryDetailView.vue
-            └── AdminView.vue
-```
+## 💡 6. 핵심 기술 및 트러블슈팅
 
-### 화면/라우트 설계(초안)
+### 📌 Topic 1. 파일 업로드 아키텍처: 멀티 어댑터 패턴 (Strategy Pattern)
+- **상황 (Situation):** 로컬 개발 환경에서는 로컬 파일 시스템(`uploads/`)을 사용해야 하지만, 운영(K8s) 환경에서는 AWS S3 스토리지를 사용해야 했습니다. 인프라 의존성 코드가 비즈니스 로직과 강하게 결합되는 문제가 있었습니다.
+- **과제 (Task):** 환경 변화에 따른 코드 수정을 최소화하고, 다형성을 활용하여 스토리지 구현체를 동적으로 교체해야 했습니다.
+- **해결 (Action):** `FileStorageService`라는 공통 인터페이스를 정의하고, `@Profile` 어노테이션을 사용하여 `LocalFileStorageService`와 `S3FileStorageService` 구현체를 분리하는 멀티 어댑터 패턴을 적용했습니다.
+- **결과 (Result):** `spring.profiles.active` 값(`dev` 또는 `aws`)에 따라 런타임에 적절한 빈(Bean)이 주입되어, 인프라 결합도를 완전히 낮추고 유지보수성을 극대화했습니다.
 
-| 화면(View) | Path(예시) | 설명 |
-|------|------|------|
-| `LoginView` | `/login` | 로그인 |
-| `SignUpView` | `/signup` | 회원가입 |
-| `MapView` | `/map` | 지도 기반 일기 목록/작성 진입 |
-| `DiaryDetailView` | `/diaries/:diaryId` | 일기 상세 |
-| `FeedView` | `/feed` | 친구 피드 |
-| `FriendView` | `/friends` | 친구 목록/요청 |
-| `NotificationsView` | `/notifications` | 알림 목록 |
-| `MyPageView` | `/mypage` | 마이페이지 |
-| `AdminView` | `/admin` | 관리자 화면 |
+### 📌 Topic 2. 실시간 기능: SSE (Server-Sent Events) 파이프라인 구축
+- **상황 (Situation):** 사용자가 웹사이트를 이용하는 동안 친구 요청 등의 알림을 실시간으로 받아야 했습니다.
+- **과제 (Task):** WebSocket은 양방향 통신 기능이 오버엔지니어링이라 판단되었고, 클라이언트가 서버로부터 데이터만 수신하면 되므로 더 가벼운 SSE 도입을 결정했습니다.
+- **해결 (Action):** 
+  - **Backend:** `SseEmitterService`를 구현하여 `ConcurrentHashMap`으로 사용자별 활성 연결을 스레드 세이프하게 관리했습니다. 30분의 타임아웃을 설정하여 자원 누수를 방지했습니다.
+  - **Frontend:** `EventSource` 객체는 HTTP 헤더(Authorization)를 지원하지 않는 한계를 극복하기 위해, 연결 시 JWT 토큰을 쿼리 파라미터(`?token=...`)로 전송하여 백엔드 Security 필터를 통과하도록 구현했습니다.
+- **결과 (Result):** 효율적인 단방향 실시간 알림 시스템을 구축하여, 알림 발생 시 프론트엔드의 Pinia 스토어가 이를 감지하고 즉각적으로 반응형 UI를 갱신하게 되었습니다.
 
-### 프론트 데이터 흐름(권장)
+<br/>
 
-1. View에서 사용자 액션 발생
-2. `src/app/api/*` 모듈에서 백엔드 API 호출
-3. `ApiResponse` 포맷 파싱 후 화면 상태 업데이트
-4. 인증 필요 API는 `Authorization: Bearer {token}` 헤더 사용
+## 📂 7. 세부 기획 및 문서
 
-> axios 인터셉터에서 토큰 만료 시 자동 재발급 처리가 구현되어 있으며, 도메인별 API 모듈(`auth.js`, `diary.js`, `friend.js`, `notification.js`, `user.js`)이 분리 구현되어 있습니다.
+프로젝트의 상세한 구조 및 설정 가이드는 `docs/` 디렉터리에 명세되어 있습니다.
 
----
+- **[시작 가이드 (01-getting-started.md)](docs/introduction/01-getting-started.md):** 로컬 개발 환경(Java 21, Docker MariaDB) 세팅 가이드
+- **[백엔드 아키텍처 (03-backend-architecture.md)](docs/introduction/03-backend-architecture.md):** CQRS 패턴 및 다형성을 활용한 파일 스토리지 전략
+- **[프론트엔드 아키텍처 (04-frontend-architecture.md)](docs/introduction/04-frontend-architecture.md):** Vue 3, Pinia 상태 관리 및 Axios 자동 토큰 갱신(Refresh Token) 로직
+- **[DevOps 및 배포 (02-devops-deployment.md)](docs/introduction/02-devops-deployment.md):** Jenkins CI 및 ArgoCD 기반 CD 파이프라인 명세
+- **[SSE 실시간 알림 가이드 (sse-guide.md)](docs/infrastructure/sse-guide.md):** SSE 풀스택 연동 로직
+- **[K8s 클러스터 명세 (k8s-architecture.md)](docs/infrastructure/k8s-architecture.md):** 매니페스트 및 Ingress 라우팅 명세
 
-## 역할 분담
+<br/>
 
-| 담당      | 도메인 | 화면 |
-|---------|------|------|
-| **정현호** | `user` (회원 + 인증/JWT + 관리자 API) | LoginView, SignUpView, MyPageView |
-| **김선일** | `diary` (일기 + 스크랩) | MapView, DiaryWriteView, DiaryDetailView |
-| **정병진** | `friend` + `notification` | FeedView, FriendsView, NotificationsView |
-| **김태형** | `common` (공통 기반 세팅) | — |
+## 🚀 8. 설치 및 실행 방법 (Getting Started)
 
-### D 상세 작업 목록 (1일차 최우선 완료)
+프로젝트를 로컬 환경에서 실행하는 방법입니다. Docker Desktop이 사전 설치되어 있어야 합니다.
 
-| 순서 | 작업 | 설명 |
-|------|------|------|
-| 1 | `build.gradle` 의존성 추가 | Web, JPA, Security, MySQL, JWT, Validation 등 |
-| 2 | `application-dev.yml` DB 설정 | 로컬 MySQL 연결 확인 |
-| 3 | `ApiResponse<T>` 완성 | 공통 응답 포맷, 에러 코드 enum 정의 |
-| 4 | `GlobalExceptionHandler` 구현 | `@RestControllerAdvice` 전역 예외 처리 |
-| 5 | `AppConfig` 구현 | CORS 설정, PasswordEncoder Bean 등록 |
-| 6 | `SecurityConfig` 구현 | JWT 필터 체인, 인증 불필요 경로 설정 |
-| 7 | `JwtTokenProvider` 구현 | 토큰 생성/검증/파싱 유틸 (A와 협업) |
-| 8 | DB 테이블 설계 확정 | 전체 팀 ERD 리뷰 및 DDL 공유 |
-
-> D가 1~7을 완료해야 A·B·C가 본격적으로 시작 가능합니다.
-
-### 개발 시작 순서
-
-```
-D → common 공통 기반 세팅 (최우선)
-         ↓
-    A → User Entity + JWT 완성
-         ↓              ↓
-    B (일기)        C (소셜)
-```
-
----
-
-## 프론트엔드 개발 가이드
-
-### 로컬 실행
-
+### 1) Repository Clone
 ```bash
-cd map-log-frontend
-npm install
-npm run dev
+git clone https://github.com/20251029-hanhwa-swcamp-22th/be22-4st-team1-project.git
+cd be22-4st-team1-project
 ```
 
-### 프로덕션 빌드
-
+### 2) Database Setup (Docker Compose)
+최상위 디렉터리에서 MariaDB 컨테이너를 백그라운드로 실행합니다.
 ```bash
-cd map-log-frontend
-npm run build
-```
-
-### 환경 변수 (`.env.local`)
-
-```bash
-VITE_API_BASE_URL=http://localhost:8080
-```
-
-### API 연동 규칙
-
-1. 공통 HTTP 클라이언트는 `src/app/api/axios.js`에서 생성/관리
-2. 도메인 API는 `src/app/api/diary.js`처럼 기능별 파일로 분리
-3. 응답은 백엔드 공통 포맷(`code`, `message`, `data`) 기준으로 처리
-4. 401/403 등 인증 오류는 인터셉터에서 공통 처리
-
----
-
-## 개발 환경 설정
-
-### 사전 준비
-
-- Java 21
-- Docker Desktop
-- Node.js 20+
-
-### Backend 실행
-
-```bash
-# 1. 저장소 클론
-git clone https://github.com/{org}/map-log.git
-cd map-log
-
-# 2. MariaDB 컨테이너 실행 (최초 1회)
 docker compose up -d
+```
 
-# 3. 백엔드 실행
+### 3) Backend Run
+```bash
 cd map-log-backend
 ./gradlew bootRun
 ```
+> 기본 프로필은 `dev`로 설정되어 있어 자동 DDL 생성 및 로컬 파일 스토리지가 활성화됩니다. API 서버는 `http://localhost:8080`에서 동작합니다.
 
-> 기본 프로필은 `dev`입니다. 운영 환경은 `--spring.profiles.active=prod`로 실행합니다.
-
-### MariaDB 컨테이너 관리
-
-```bash
-docker compose up -d    # 시작
-docker compose down     # 중지 (데이터 유지)
-docker compose down -v  # 중지 + 데이터 삭제
-```
-
-### Frontend 실행
-
+### 4) Frontend Run
+새로운 터미널을 열고 프론트엔드를 실행합니다.
 ```bash
 cd map-log-frontend
 npm install
 npm run dev
 ```
-
-> 브라우저에서 `http://localhost:5173` 접속
-
----
-
-## 환경 변수
-
-Spring Boot는 `application-{profile}.yml`로 환경별 설정을 관리합니다.
-
-### 개발 환경 (`application-dev.yml`)
-
-로컬 개발 시 아래 값을 본인 환경에 맞게 수정하세요. **이 파일은 커밋해도 됩니다.**
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mariadb://localhost:3306/maplog_dev
-    username: root
-    password: 1234   # 본인 MariaDB 비밀번호로 변경
-
-jwt:
-  secret: dev-secret-key-must-be-at-least-32-characters-long
-
-app:
-  upload-dir: uploads   # 이미지 파일 저장 경로 (기본값: 프로젝트 루트/uploads)
-```
-
-### 운영 환경 (`application-prod.yml`)
-
-`${변수명}` 형태로 작성되어 있으며, 실제 값은 서버 환경 변수 또는 Docker/Kubernetes 시크릿으로 주입합니다. **절대 실제 값을 yml에 직접 작성하지 마세요.**
-
-| 변수명 | 설명 |
-|--------|------|
-| `DB_HOST` | MySQL 호스트 (RDS 엔드포인트 등) |
-| `DB_NAME` | 데이터베이스명 |
-| `DB_USERNAME` | DB 사용자 |
-| `DB_PASSWORD` | DB 비밀번호 |
-| `JWT_SECRET` | JWT 서명 키 (32자 이상) |
-
----
-
-## API 공통 규격
-
-### 응답 포맷
-
-```json
-{
-  "code": "SUCCESS",
-  "message": "요청이 성공했습니다.",
-  "data": { }
-}
-```
-
-### 에러 응답 포맷
-
-```json
-{
-  "code": "USER_NOT_FOUND",
-  "message": "존재하지 않는 사용자입니다.",
-  "data": null
-}
-```
-
-### 페이징
-
-```json
-{
-  "code": "SUCCESS",
-  "message": "조회 성공",
-  "data": {
-    "content": [],
-    "page": 0,
-    "size": 10,
-    "totalElements": 100,
-    "totalPages": 10,
-    "last": false
-  }
-}
-```
-
-### 인증 헤더
-
-```
-Authorization: Bearer {accessToken}
-```
-
-### 날짜 형식
-
-```
-yyyy-MM-ddTHH:mm:ss  (ISO 8601)
-예) 2026-02-19T14:30:00
-```
-
----
-
-## 주요 API 엔드포인트
-
-### 사용자 / 인증 `담당: A`
-
-| No | Method | Endpoint | 설명 | 인증 | 우선순위 |
-|----|--------|----------|------|------|---------|
-| 1 | POST | `/api/auth/signup` | 회원가입 | 불필요 | 필수 |
-| 2 | POST | `/api/auth/login` | 로그인 | 불필요 | 필수 |
-| 3 | POST | `/api/auth/refresh` | 토큰 재발급 | RT | 필수 |
-| 4 | POST | `/api/auth/logout` | 로그아웃 | 필요 | 필수 |
-| 5 | GET | `/api/users/me` | 마이페이지 조회 | 필요 | 필수 |
-| 6 | PATCH | `/api/users/me` | 프로필 수정 (프로필 이미지 멀티파트 업로드 지원) | 필요 | 필수 |
-| 7 | GET | `/api/users/me/diaries` | 내 일기 목록 | 필요 | 필수 |
-| 8 | GET | `/api/users/me/scraps` | 내 스크랩 목록 | 필요 | 보통 |
-| 9 | DELETE | `/api/users/me` | 회원 탈퇴 | 필요 | 중요 |
-| 10 | GET | `/api/users/search` | 사용자 검색 | 필요 | 보통 |
-| 10-1 | GET | `/api/users/check-nickname` | 닉네임 중복 확인 | 불필요 | 보통 |
-| 11 | GET | `/api/admin/users` | 회원 목록 조회 | ADMIN | 중요 |
-| 12 | PATCH | `/api/admin/users/{userId}/status` | 회원 상태 변경 (정지/활성화) | ADMIN | 중요 |
-
-> No.11, 12는 별도 `admin` 도메인 없이 `user` 도메인 내 `AdminUserController`로 구현
-
-### 일기 / 스크랩 `담당: B`
-
-| No | Method | Endpoint | 설명 | 인증 | 우선순위 |
-|----|--------|----------|------|------|---------|
-| 13 | POST | `/api/diaries` | 일기 작성 (이미지 멀티파트 업로드 지원) | 필요 | 필수 |
-| 14 | GET | `/api/diaries/{diaryId}` | 일기 상세 조회 (이미지 목록 포함) | 필요 | 필수 |
-| 15 | PUT | `/api/diaries/{diaryId}` | 일기 수정 (이미지 추가/삭제 지원) | 필요 | 필수 |
-| 16 | DELETE | `/api/diaries/{diaryId}` | 일기 삭제 (Soft Delete) | 필요 | 필수 |
-| 17 | GET | `/api/diaries/map` | 지도 범위 내 마커 조회 | 필요 | 필수 |
-| 17-1 | POST | `/api/diaries/{diaryId}/share` | 일기를 특정 친구에게 공유 | 필요 | 보통 |
-| 17-2 | DELETE | `/api/diaries/{diaryId}/share/{userId}` | 일기 공유 취소 | 필요 | 보통 |
-| 18 | POST | `/api/scraps` | 스크랩 추가 | 필요 | 보통 |
-| 19 | DELETE | `/api/scraps/{diaryId}` | 스크랩 취소 | 필요 | 보통 |
-
-### 친구 / 알림 `담당: C`
-
-| No | Method | Endpoint | 설명 | 인증 | 우선순위 |
-|----|--------|----------|------|------|---------|
-| 20 | POST | `/api/friends` | 친구 요청 | 필요 | 보통 |
-| 21 | PATCH | `/api/friends/{friendId}` | 친구 요청 응답 (수락/거절) | 필요 | 보통 |
-| 22 | GET | `/api/friends` | 친구 목록 조회 | 필요 | 보통 |
-| 23 | GET | `/api/friends/pending` | 받은 친구 요청 목록 | 필요 | 보통 |
-| 24 | GET | `/api/feed` | 친구 공개 일기 피드 | 필요 | 보통 |
-| 25 | GET | `/api/notifications` | 알림 목록 조회 | 필요 | 중요 |
-| 26 | PATCH | `/api/notifications/{notificationId}/read` | 알림 단건 읽음 | 필요 | 중요 |
-| 27 | PATCH | `/api/notifications/read-all` | 알림 전체 읽음 | 필요 | 중요 |
-| 28 | DELETE | `/api/notifications` | 알림 일괄 삭제 (`?isRead=Y\|N` 필터 가능) | 필요 | 중요 |
-
-#### 요청 예시
-
-```json
-POST /api/diaries
-Authorization: Bearer {accessToken}
-
-{
-  "title": "서울 여행",
-  "content": "오늘 경복궁을 다녀왔다.",
-  "latitude": 37.5796,
-  "longitude": 126.9770,
-  "locationName": "경복궁",
-  "address": "서울특별시 종로구 사직로 161",
-  "visitedAt": "2026-02-19T14:00:00"
-}
-```
-
-#### 응답 예시
-
-```json
-{
-  "code": "SUCCESS",
-  "message": "일기가 작성되었습니다.",
-  "data": {
-    "diaryId": 1,
-    "title": "서울 여행",
-    "createdAt": "2026-02-19T14:30:00"
-  }
-}
-```
-
----
-
-## 테스트
-
-```bash
-cd map-log-backend
-
-# 전체 테스트 실행
-./gradlew test
-
-# 특정 도메인 테스트만 실행
-./gradlew test --tests "com.maplog.diary.*"
-```
-
-> 테스트 결과는 `build/reports/tests/test/index.html` 에서 확인할 수 있습니다.
-
----
-
-## Git 컨벤션
-
-### 브랜치 전략
-
-```
-main
-└── dev
-    ├── feature/A-user
-    ├── feature/B-diary
-    ├── feature/C-social
-    └── feature/D-common
-```
-
-### 커밋 메시지
-
-```
-feat:     새로운 기능
-fix:      버그 수정
-refactor: 리팩토링
-test:     테스트 코드
-docs:     문서 수정
-chore:    빌드/설정 변경
-```
-
-예시
-
-```
-feat: 일기 작성 API 구현
-fix: JWT 토큰 만료 처리 오류 수정
-```
-
-### PR 규칙
-
-- `feature/*` → `dev` 로 PR
-- 최소 1명 이상 코드 리뷰 후 머지
-- `main` 머지는 배포 시에만
-
----
-
-## 기여 가이드
-
-1. `dev` 브랜치에서 본인 담당 `feature/*` 브랜치 생성
-2. 작업 완료 후 `dev`로 PR 생성
-3. PR 제목에 담당 파트 명시 (예: `[B] 일기 작성 API 구현`)
-4. 관련 이슈 번호 포함 (예: `Closes #12`)
-5. 최소 1명 리뷰 승인 후 머지
-
-> **주의:** `application-prod.yml`에 실제 비밀번호·시크릿 키를 직접 작성하지 마세요.
-
----
-
-## 라이선스
-
-This project is licensed under the MIT License.
+> 로컬 웹 서버는 `http://localhost:5173`에서 확인할 수 있습니다.
