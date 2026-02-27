@@ -4,11 +4,10 @@
 
 ## 1. 전제 조건 (Prerequisites)
 프로젝트 실행을 위해 다음 도구들이 설치되어 있어야 합니다.
-- **Java:** JDK 21
+- **Java:** JDK 21 (LTS)
 - **Node.js:** v20 이상 (npm 포함)
 - **Docker:** Desktop 버전 (Kubernetes 활성화 권장)
-- **Database:** MariaDB 11 (로컬 실행 시)
-- **UI Icons:** Lucide Vue Next (프론트엔드 의존성)
+- **Database:** MariaDB 11 (Docker Compose 사용 가능)
 
 ## 2. 환경 변수 설정 (Environment Variables)
 프로젝트는 민감한 정보를 환경 변수로 관리합니다. 로컬 실행과 K8s 실행 방식에 따라 설정 방법이 다릅니다.
@@ -16,12 +15,16 @@
 ### 2.1 로컬 실행 (Local Development)
 `.env.example` 파일을 참고하여 각 프로젝트 루트에 환경 변수 파일을 생성합니다.
 
-- **Backend (`map-log-backend/`):** `src/main/resources/application-dev.yml`의 기본값을 사용하거나 시스템 환경 변수를 설정합니다.
-- **Frontend (`map-log-frontend/`):** `.env.local` 파일을 생성합니다.
+- **Backend (`map-log-backend/`):** 
+  - 기본값은 `src/main/resources/application-dev.yml`에 정의되어 있습니다.
+  - MariaDB 비밀번호나 AWS S3 키가 필요한 경우 시스템 환경 변수(`SPRING_DATASOURCE_PASSWORD`, `JWT_SECRET` 등)를 설정합니다.
+- **Frontend (`map-log-frontend/`):** 
+  - `.env.local` 파일을 생성하여 다음과 같이 설정합니다.
   ```bash
   VITE_API_BASE_URL=http://localhost:8080
   VITE_KAKAO_MAP_KEY=your_kakao_javascript_key
   ```
+  *참고: 프론트엔드 API 호출 시 `/api` 접두사는 Axios 인터셉터에서 자동으로 처리되므로, `VITE_API_BASE_URL`에는 백엔드 호스트 주소만 입력하십시오.*
 > **참고:** 프론트엔드는 `src/app/api/axios.js`에서 공통 설정을 관리하며, 401 Unauthorized 에러 발생 시 `refreshToken`을 사용하여 자동으로 토큰을 갱신하는 인터셉터 로직이 구현되어 있습니다.
 
 ### 2.2 Kubernetes 실행 (K8s Deployment)

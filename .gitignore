@@ -30,3 +30,7 @@ DEVOPS_GUIDE.md
 
 # .gemini
 .gemini/
+.github/commands
+.github/workflows
+
+gha-creds-*.json

@@ -84,6 +84,45 @@ JWT 기반 인증으로 안전하게 로그인하고, 계정을 생성하거나 
 
 ## 🏗 5. 시스템 아키텍처 및 CI/CD 파이프라인
 
+MapLog 프로젝트는 서비스 안정성과 확장성을 위해 Kubernetes 환경에 마이크로서비스 아키텍처를 구축했으며, 무중단 배포를 위한 CI/CD 파이프라인을 연동했습니다.
+
+### 5.1 시스템 아키텍처 (System Architecture)
+
+```mermaid
+graph TD
+    %% 사용자 및 외부 연동
+    User[사용자 / Web Browser] ---|HTTPS/HTTP| Ingress[Nginx Ingress Controller]
+    
+    %% Kubernetes 내부 구조
+    subgraph "Kubernetes Cluster"
+        Ingress --- FE_Service[Frontend Service: Port 80]
+        Ingress --- BE_Service[Backend Service: Port 8080]
+        
+        FE_Service --- FE_Pod[Frontend Pods: Vue 3 / Nginx]
+        BE_Service --- BE_Pod[Backend Pods: Spring Boot 3.5]
+        
+        subgraph "Backend Internals"
+            BE_Pod --- Auth[Spring Security / JWT]
+            BE_Pod --- SSE[SSE / Notifications]
+            BE_Pod --- JPA[Spring Data JPA / MyBatis]
+        end
+    end
+
+    %% 데이터 및 외부 연동
+    subgraph "Data & Storage Layer"
+        JPA --- DB[(MariaDB 11)]
+        BE_Pod --- S3[AWS S3]
+        FE_Pod --- Kakao[Kakao Maps SDK]
+    end
+
+    style User fill:#f9f,stroke:#333,color:#020202,stroke-width:2px
+    style Ingress fill:#bbf,stroke:#333,color:#020202,stroke-width:2px
+    style DB fill:#f96,stroke:#333,color:#020202,stroke-width:2px
+    style S3 fill:#9f9,stroke:#333,color:#020202,stroke-width:2px
+```
+
+### 5.2 CI/CD 파이프라인 (CI/CD Pipeline)
+
 MapLog 프로젝트는 무중단 자동화 배포를 위해 **GitOps** 기반의 CI/CD 파이프라인을 구축했습니다.
 
 ```mermaid

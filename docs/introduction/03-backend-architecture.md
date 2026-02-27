@@ -3,12 +3,29 @@
 MapLog 백엔드는 Spring Boot 3.5 기반으로 설계되었으며, 도메인 주도 설계(DDD)와 CQRS 패턴을 지향합니다.
 
 ## 1. 패키지 구조 및 패턴 (CQRS)
-각 도메인은 명확한 역할 분리를 위해 **Command(쓰기)**와 **Query(읽기)** 패키지로 분리되어 있습니다.
+MapLog 백엔드는 비즈니스 로직과 데이터 처리를 효율적으로 관리하기 위해 도메인 기반 패키지 구조를 채택했으며, 각 도메인 내부는 **Command(쓰기)**와 **Query(읽기)**로 명확히 분리되어 있습니다.
 
-- **Command:** 비즈니스 로직 처리, 데이터 생성/수정/삭제를 담당합니다. (Spring Data JPA 사용)
-- **Query:** 복잡한 조회 로직, DTO 매핑, 성능 최적화(MyBatis 연동 등)를 담당합니다.
-- **SSE (sse):** `SseController`와 `SseEmitterService`를 통해 실시간 알림 이벤트를 관리하며, `ConcurrentHashMap`을 사용하여 사용자별 연결 세션을 유지합니다.
-- **MyBatis 연동:** 단순 CRUD 외에 대량의 데이터 조회나 복잡한 조인(예: 일기 목록 페이징, 친구 검색 등)은 `src/main/resources/mybatis`의 XML 매퍼를 통해 쿼리 수준에서 최적화합니다.
+- **`com.maplog.diary`**: 일기 작성, 수정, 조회 및 지도 기반 검색.
+- **`com.maplog.friend`**: 친구 요청 관리 및 팔로잉 목록.
+- **`com.maplog.notification`**: 알림 내역 저장 및 상태 관리.
+- **`com.maplog.sse`**: 실시간 알림 전송을 위한 SSE(Server-Sent Events) 연결 관리.
+- **`com.maplog.user`**: 회원 가입, 로그인, JWT 인증 및 프로필 관리.
+- **`com.maplog.common`**: 전역 예외 처리, 보안 설정 및 스토리지 서비스 등 공통 인프라.
+
+```mermaid
+graph LR
+    subgraph "Domain Package (e.g., diary)"
+        C[Command] -->|Spring Data JPA| DB[(MariaDB)]
+        Q[Query] -->|Read Only / DTO| DB
+        Q -.->|MyBatis Mapper| DB
+    end
+    Controller --> C
+    Controller --> Q
+```
+
+- **Command:** 비즈니스 로직 처리 및 데이터 상태 변경을 담당합니다. JPA를 사용하여 영속성을 보장합니다.
+- **Query:** 복잡한 조회와 성능 최적화를 담당합니다. 단순 조회는 JPA를 사용하되, 복잡한 통계나 조인은 MyBatis XML 매퍼를 활용합니다.
+- **장점:** 읽기와 쓰기의 모델을 분리함으로써 시스템의 복잡도를 낮추고 각 요청의 특성에 맞는 최적화가 가능합니다.
 
 ## 2. 파일 저장 전략 (AWS S3)
 이미지 첨부 기능을 위해 AWS S3 인프라를 활용하며, 보안을 위해 **Presigned URL** 방식을 채택했습니다.
@@ -48,7 +65,14 @@ graph TD
 3. **URL 생성:** 서버는 AWS SDK를 사용하여 해당 객체에 접근할 수 있는 **임시 서명된 URL**을 생성합니다.
 4. **유효 시간:** 보안을 위해 생성된 URL은 **1시간 동안만** 유효하며, 이후에는 접근이 차단됩니다.
 
-## 3. 공통 인프라 레이어 (Common)
+## 3. 실시간 알림 아키텍처 (SSE)
+사용자 간의 상호작용(친구 요청, 수락 등)을 즉각적으로 전달하기 위해 **SSE(Server-Sent Events)** 기술을 채택했습니다.
+
+- **`SseEmitterService`**: 사용자별 `SseEmitter` 객체를 `ConcurrentHashMap`으로 관리하여 서버 부하를 최소화하며 실시간 연결을 유지합니다.
+- **연결 유지 및 Heartbeat**: 30분의 타임아웃을 설정하고, 연결 유지 메시지를 전송하여 네트워크 환경(Proxy, ELB 등)으로 인한 연결 끊김을 방지합니다.
+- **인증 우회**: 브라우저 `EventSource` 표준에서 HTTP 헤더 지원이 제한적이므로, 연결 시 쿼리 파라미터로 JWT를 전달받아 `JwtAuthenticationFilter`에서 인증을 처리합니다.
+
+## 4. 공통 인프라 레이어 (Common)
 - **Security:** JWT 기반 인증/인가를 수행하며, `JwtAuthenticationFilter`가 모든 요청의 토큰을 검증합니다.
 - **Exception Handling:** `GlobalExceptionHandler`를 통해 비즈니스 예외와 시스템 예외를 표준화된 `ApiResponse` 포맷으로 응답합니다.
 - **Storage Service:** 인터페이스화를 통해 `dev` 프로필에서는 로컬 저장소를, `aws` 프로필에서는 S3 저장소를 사용하도록 유연하게 설계되었습니다.
