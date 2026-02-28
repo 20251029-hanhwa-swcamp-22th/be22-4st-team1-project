@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>MapLog – System Architecture</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0d1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 36px 20px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    header h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #63b3ed;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+    header p {
+      font-size: 0.875rem;
+      color: #718096;
+    }
+    header .tag {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: #1e3a5f;
+      color: #90cdf4;
+      border: 1px solid #2b6cb0;
+    }
+
+    .diagram-wrap {
+      background: #161b27;
+      border: 1px solid #2d3748;
+      border-radius: 18px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 1280px;
+      box-shadow: 0 12px 60px rgba(0,0,0,0.55);
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    footer {
+      margin-top: 28px;
+      font-size: 0.78rem;
+      color: #4a5568;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>MapLog — System Architecture</h1>
+    <p>기술 스택 및 서비스 아키텍처</p>
+    <span class="tag">발표 섹션 2 · CI/CD Pipeline (GitOps) + Runtime Request Flow</span>
+  </header>
+
+  <div class="diagram-wrap">
+    <div class="mermaid">
+%%{
+  init: {
+    "theme": "base",
+    "themeVariables": {
+      "background":          "#161b27",
+      "primaryColor":        "#1e2d4a",
+      "primaryTextColor":    "#e2e8f0",
+      "primaryBorderColor":  "#4a6cf7",
+      "secondaryColor":      "#172b22",
+      "secondaryTextColor":  "#c6f6d5",
+      "secondaryBorderColor":"#38a169",
+      "tertiaryColor":       "#2a1a2e",
+      "tertiaryTextColor":   "#e9d8fd",
+      "tertiaryBorderColor": "#805ad5",
+      "lineColor":           "#4a5568",
+      "edgeLabelBackground": "#1a2035",
+      "clusterBkg":          "#111827",
+      "clusterBorder":       "#374151",
+      "titleColor":          "#93c5fd",
+      "fontFamily":          "Segoe UI, system-ui, sans-serif",
+      "fontSize":            "14px",
+      "nodeBorder":          "2px"
+    },
+    "flowchart": {
+      "curve": "basis",
+      "padding": 20
+    }
+  }
+}%%
+flowchart TB
+
+    %% ───── External Actors ─────
+    DEV(["👨‍💻 Developer"])
+    BROWSER(["🌐 User Browser"])
+
+    %% ═══════════════════════════════════════════════
+    %% CI / CD Pipeline
+    %% ═══════════════════════════════════════════════
+    subgraph PIPELINE["🔄  CI / CD Pipeline  —  GitOps"]
+        direction LR
+
+        GH["📦 GitHub\nApp Repository"]
+        JEN["🔧 Jenkins\nBuild  ·  Test\nDocker Build & Push"]
+        REG["🐳 Docker\nRegistry"]
+        GM["📋 GitOps\nManifest Repo"]
+        ARGO["🚀 ArgoCD\nGitOps Sync"]
+    end
+
+    %% ═══════════════════════════════════════════════
+    %% Kubernetes Cluster
+    %% ═══════════════════════════════════════════════
+    subgraph K8S["☸️  Kubernetes Cluster"]
+        direction TB
+
+        %% Ingress
+        subgraph INGRESS["🌐  Nginx Ingress Controller"]
+            direction LR
+            STATIC["/ \n→ Vue 3 SPA\n(Static)"]
+            APIPRX["/api/**\n→ Spring Boot\n(Reverse Proxy)"]
+        end
+
+        %% Frontend Pod
+        subgraph FE["🖼  Frontend Pod"]
+            VUE["Vue 3  (Composition API)\nPinia  |  Vite  |  Axios\nJWT Auto-Refresh Interceptor"]
+        end
+
+        %% Backend Pod
+        subgraph BE["🍃  Spring Boot 3.5  Backend Pod  (Java 21)"]
+            JWT_F["🔐 JwtAuthenticationFilter\nSecurity Filter Chain\nCORS · CSRF Config"]
+
+            subgraph CQRS["CQRS Pattern"]
+                direction LR
+                CMD["✏️ Command Side\nController  →  Service\nJPA Repository\nPOST · PUT · DELETE"]
+                QRY["🔍 Query Side\nController  →  Service\nMyBatis Repository\nGET"]
+            end
+
+            SSE["📡 SSE\nNotification Service\n(Real-time Push)"]
+        end
+
+        %% Data Layer
+        subgraph DATA["💾  Data Layer"]
+            direction LR
+            DB[("🗄️ MariaDB 11\n:3306")]
+            S3["☁️ AWS S3\nFile Storage\n(Images · Profiles)"]
+        end
+
+    end
+
+    %% ═══════════════════════════════════════════════
+    %% CI/CD 흐름 엣지
+    %% ═══════════════════════════════════════════════
+    DEV      -- "① git push"              --> GH
+    GH       -- "② Webhook trigger"       --> JEN
+    JEN      -- "③ docker push"           --> REG
+    JEN      -- "④ update image tag"      --> GM
+    ARGO     -- "⑤ watches manifest"      --> GM
+    ARGO     -- "⑥ sync & rolling-update" --> K8S
+
+    %% ═══════════════════════════════════════════════
+    %% Runtime 요청 흐름 엣지
+    %% ═══════════════════════════════════════════════
+    BROWSER  -- "HTTPS Request"           --> INGRESS
+    STATIC   -->                              VUE
+    APIPRX   -->                              JWT_F
+    JWT_F    -->                              CMD
+    JWT_F    -->                              QRY
+    CMD      -- "write"                   --> DB
+    QRY      -- "read"                    --> DB
+    CMD      -- "upload"                  --> S3
+    SSE      -. "Server-Sent Events\n(알림 실시간 Push)" .-> BROWSER
+
+    %% ═══════════════════════════════════════════════
+    %% Class Styling
+    %% ═══════════════════════════════════════════════
+    classDef actor    fill:#2d2a14,stroke:#d69e2e,color:#fefcbf,rx:12
+    classDef pipe     fill:#1a2744,stroke:#4a6cf7,color:#a3bffa
+    classDef fe       fill:#12291e,stroke:#38a169,color:#9ae6b4
+    classDef be       fill:#1a1f36,stroke:#4a6cf7,color:#c3dafe
+    classDef cqrsCmd  fill:#1e2538,stroke:#805ad5,color:#d6bcfa
+    classDef cqrsQry  fill:#1e2538,stroke:#6b46c1,color:#e9d8fd
+    classDef data     fill:#2d1515,stroke:#e53e3e,color:#feb2b2
+    classDef sse      fill:#1a2932,stroke:#2b6cb0,color:#90cdf4
+
+    class DEV,BROWSER actor
+    class GH,JEN,REG,GM,ARGO pipe
+    class VUE,STATIC fe
+    class JWT_F,APIPRX be
+    class CMD cqrsCmd
+    class QRY cqrsQry
+    class DB,S3 data
+    class SSE sse
+    </div>
+  </div>
+
+  <footer>MapLog · Team 1 · 2026 · Mermaid.js로 렌더링</footer>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+  </script>
+</body>
+</html>
