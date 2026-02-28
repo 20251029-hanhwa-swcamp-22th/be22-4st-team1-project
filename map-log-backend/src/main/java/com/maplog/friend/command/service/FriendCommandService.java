@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,8 +40,9 @@ public class FriendCommandService {
         userCommandRepository.findByIdAndDeletedAtIsNull(receiverId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        Friend existingFriend = friendCommandRepository.findByUsers(requesterId, receiverId).orElse(null);
-        if (existingFriend != null) {
+        Optional<Friend> existingFriendOpt = friendCommandRepository.findByUsers(requesterId, receiverId);
+        if (existingFriendOpt.isPresent()) {
+            Friend existingFriend = existingFriendOpt.get();
             if (existingFriend.isPending()) {
                 throw new BusinessException(ErrorCode.ALREADY_FRIEND_REQUESTED);
             }
